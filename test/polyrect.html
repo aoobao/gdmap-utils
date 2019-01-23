@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="./POINT.js"></script>
+<script src="./gdmap-utils.js"></script>
+<script>
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: [120.593342986658, 29.111016235593]
+
+  });
+  // console.log(AMapUtils.Polyrect)
+
+  var polyrect = new AMapUtils.Polyrect({
+    coordinate: HANGZHOU_COORDINATE,
+    checkCoordinate: HANGZHOU_CHECK_COORDINATE
+  })
+
+  polyrect.destroy()
+</script>
+
+</html>

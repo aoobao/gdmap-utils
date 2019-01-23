@@ -1,0 +1,13 @@
+.dcmap-normaltext-container {
+  // display: flex;
+  // justify-content: center;
+  // align-items: center;
+  width: 0px;
+  pointer-events: none;
+  .text {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}

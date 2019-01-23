@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <button onclick="show()">显示</button>
+  <button onclick="hide()">隐藏</button>
+  <button onclick="changeStroke()">修改边框样式</button>
+  <button onclick="changeFillStyle()">修改填充颜色</button>
+  <button onclick="hideText()">隐藏文字</button>
+  <button onclick="showText()">显示文字</button>
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="./POINT.js"></script>
+<script src="./POINT_LIST.js"></script>
+<script src="./gdmap-utils.js"></script>
+<script>
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: [120.593342986658, 29.111016235593]
+
+  });
+  // map.on('click', function (e) {
+  //   let lnglat = e.lnglat
+  //   console.log(lnglat.lng + ',' + lnglat.lat)
+  // })
+  // 创建网格
+  var polyrect = new AMapUtils.Polyrect({
+    map: map,
+    coordinate: HANGZHOU_COORDINATE,
+    checkCoordinate: HANGZHOU_CHECK_COORDINATE,
+    position: HANGZHOU_POINT,
+    strokeColor: '#ff0000', // 网格颜色
+    strokeOpacity: 0.8, // 网格透明度
+    strokeWeight: 2, // 网格粗细
+    fillColor: 'blue', // 网格填充
+    fillOpacity: 0.2, // 网格填充透明度
+    // useCanvas: true, // 使用canvas渲染
+    // textClass: null,  // 传入null则没有文字显示
+    minZoom: 5,
+    maxZoom: 10,
+    extData: {
+      id: 1,
+      name: '自定义数据'
+    },
+    textOption: {
+      text: '杭州',
+      textColor: 'red',
+      minZoom: 7
+    },
+    click: function (data, e) {
+      alert('click' + JSON.stringify(data))
+    },
+    mouseover: function (data, e) {
+      this.setPolygonStyle({
+        fillColor: 'yellow',
+        fillOpacity: 0.5
+      })
+    },
+    mouseout: function (data, e) {
+      this.setPolygonStyle({
+        fillColor: 'blue',
+        fillOpacity: 0.2
+      })
+    }
+
+  })
+  // polyrect.setMap(map)
+  // 显示
+  function show() {
+    polyrect.setMap(map)
+  }
+  // 隐藏
+  function hide() {
+    polyrect.setMap(null)
+  }
+  // 修改网格样式
+  function changeStroke() {
+    let opt = {
+      strokeColor: '#' + randHex() + randHex() + randHex(), // 边框颜色
+      strokeOpacity: randBetween(0, 100) / 100, // 边框透明度
+      strokeWeight: randBetween(0, 5) // 边框宽度
+    }
+    polyrect.setPolygonStyle(opt)
+  }
+  // 修改填充颜色样式
+  function changeFillStyle() {
+    let opt = {
+      fillColor: '#' + randHex() + randHex() + randHex(), // 填充颜色
+      fillOpacity: randBetween(0, 100) / 100, // 填充透明度
+    }
+    polyrect.setPolygonStyle(opt)
+  }
+
+  // 隐藏文字
+  function hideText() {
+    polyrect.getText().setMap(null)
+  }
+
+  function showText() {
+    polyrect.getText().setMap(map)
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+</script>
+
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <button onclick="show()">显示</button>
+  <button onclick="hide()">隐藏</button>
+  <button onclick="changeStroke()">修改边框样式</button>
+  <button onclick="changeFillStyle()">修改填充颜色</button>
+  <button onclick="hideText()">隐藏文字</button>
+  <button onclick="showText()">显示文字</button>
+  <button onclick="setRndStyle()">设置不同样式</button>
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="/temp/POINT_LIST.js"></script>
+<script src="/gdmap-utils.js"></script>
+<script>
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: [120.593342986658, 29.111016235593]
+
+  });
+  let polyrectList = new AMapUtils.PolyrectList({
+    map: map,
+    strokeColor: 'red',
+    strokeOpacity: 0.8,
+    strokeWeight: 1,
+    fillColor: 'yellow',
+    fillOpacity: 0.3,
+    textClass: AMapUtils.NormalText,
+    // textClass: null,
+    textOption: {
+      textColor: 'red',
+      fontSize: 12
+    },
+    click: function (polyrect) {
+      alert('click:' + JSON.stringify(polyrect.getExtData()))
+    },
+    mouseout: function (polyrect) {
+      // console.log('移出', polyrect)
+      polyrect.setPolygonStyle({
+        fillColor: 'yellow',
+        fillOpacity: 0.3,
+      })
+    },
+    mouseover: function (polyrect, e) {
+      // console.log('移入', polyrect)
+      polyrect.setPolygonStyle({
+        fillColor: 'blue',
+        fillOpacity: 0.5
+      })
+    }
+  })
+  let list = POINT_LIST.map(t => {
+    return {
+      checkCoordinate: t.checkCoordinate,
+      coordinate: t.checkCoordinate,
+      position: [t.longitude, t.latitude],
+      textOption: {
+        text: t.name
+      },
+      extData: t
+    }
+  })
+  polyrectList.setData(list)
+
+  // 显示
+  function show() {
+    polyrectList.setMap(map)
+  }
+  // 隐藏
+  function hide() {
+    polyrectList.setMap(null)
+  }
+  // 修改网格样式
+  function changeStroke() {
+    let opt = {
+      strokeColor: '#' + randHex() + randHex() + randHex(), // 边框颜色
+      strokeOpacity: randBetween(0, 100) / 100, // 边框透明度
+      strokeWeight: randBetween(0, 5) // 边框宽度
+    }
+    polyrectList.setPolygonStyle(opt)
+  }
+  // 修改填充颜色样式
+  function changeFillStyle() {
+    let opt = {
+      fillColor: '#' + randHex() + randHex() + randHex(), // 填充颜色
+      fillOpacity: randBetween(0, 100) / 100, // 填充透明度
+    }
+    polyrectList.setPolygonStyle(opt)
+  }
+
+  function setRndStyle() {
+    let list = POINT_LIST.map(t => {
+      return {
+        checkCoordinate: t.checkCoordinate,
+        coordinate: t.checkCoordinate,
+        position: [t.longitude, t.latitude],
+        textOption: {
+          text: t.name
+        },
+        extData: t,
+        strokeColor:'#' + randHex() + randHex() + randHex(), // 边框颜色
+        strokeOpacity: randBetween(0, 100) / 100, // 边框透明度
+        strokeWeight: randBetween(0, 5),// 边框宽度
+        fillColor: '#' + randHex() + randHex() + randHex(), // 填充颜色
+        fillOpacity: randBetween(0, 100) / 100, // 填充透明度
+      }
+    })
+    polyrectList.setData(list)
+  }
+
+  // 隐藏文字
+  function hideText() {
+    polyrectList.hideText()
+  }
+
+  function showText() {
+    polyrectList.showText()
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+</script>
+
+</html>
