@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="/gdmap-utils.js"></script>
+<script>
+  let position = [120.593342986658, 29.111016235593]
+  let startPosition = [122.721247, 26.74474]
+  let textList = []
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: position,
+    viewMode: '3D',
+    pitch: 60,
+    rotateEnable: false,
+    pitchEnable: false,
+
+  });
+
+
+  let text3d = new AMapUtils.Text3D({
+    map: map,
+    position: position,
+    text: '雷达中心点',
+    textColor: 'blue',
+    mouseover: function () {
+      // console.log(this, '移入')
+      // this.showRipples()
+    },
+    mouseout: function () {
+      // console.log(this, '移出')
+      // this.closeRipples()
+    },
+    click: function () {
+      console.log(this, 'click')
+    }
+  })
+
+  map.on('click', function (e) {
+    let lnglat = e.lnglat
+    let position2 = [lnglat.getLng(), lnglat.getLat()]
+    console.log(position2)
+    let angle = 360 - ~~AMapUtils.Utils.getAngle(...position, ...position2)
+    // console.log(angle)
+    let text = new AMapUtils.Text3D({
+      map: map,
+      position: position2,
+      text: '标点' + (textList.length + 1),
+      extData: {
+        angle
+      }
+    })
+    textList.push(text)
+  })
+
+
+  let endtext = new AMapUtils.Text3D({
+    map: map,
+    position: startPosition,
+    text: '扫描起始点',
+    textColor: 'blue',
+  })
+
+
+  let radar = new AMapUtils.RadarChart({
+    map: map,
+    center: position,
+    target: startPosition,
+    coverNumber: 0.2,
+    speed: 60,
+    fillStyle: 'rgba(0,200,0,0.7)',
+    callback: function (e) {
+      // console.log(e)
+      let texts = textList.filter(t => {
+        let data = t.getExtData()
+        let angle = data.angle
+        return e.start < angle && e.end >= angle
+      })
+
+      texts.forEach(text => {
+        text.setMap(text.isShow() ? null : map)
+      })
+    }
+  })
+  radar.start()
+
+  function setRndStyle() {
+    let list = POINT_LIST.map(t => {
+      return {
+        checkCoordinate: t.checkCoordinate,
+        coordinate: t.checkCoordinate,
+        position: [t.longitude, t.latitude],
+        textOption: {
+          text: t.name
+        },
+        extData: t,
+        strokeColor: '#' + randHex() + randHex() + randHex(), // 边框颜色
+        strokeOpacity: randBetween(0, 100) / 100, // 边框透明度
+        strokeWeight: randBetween(0, 5), // 边框宽度
+        fillColor: '#' + randHex() + randHex() + randHex(), // 填充颜色
+        fillOpacity: randBetween(0, 100) / 100, // 填充透明度
+      }
+    })
+    polyrectList.setData(list)
+  }
+
+  // 隐藏文字
+  function hideText() {
+    polyrectList.hideText()
+  }
+
+  function showText() {
+    polyrectList.showText()
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+</script>
+
+</html>

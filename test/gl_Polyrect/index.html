@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      #map {
+        width: 800px;
+        height: 600px;
+        float: left;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <button onclick="show()">显示</button>
+    <button onclick="hide()">隐藏</button>
+    <button onclick="hideText()">隐藏文字</button>
+    <button onclick="showText()">显示文字</button>
+  </body>
+  <script
+    type="text/javascript"
+    src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"
+  ></script>
+  <script src="/temp/POINT.js"></script>
+  <script src="/gdmap-utils.js"></script>
+  <script>
+    var position = [120.593342986658, 29.111016235593]
+    var minX = 117.84
+    var minY = 27.59
+    var maxX = 122.08
+    var maxY = 32.04
+    // 创建高德地图
+    var map = new AMap.Map('map', {
+      zoom: 7,
+      center: position,
+      viewMode: '3D',
+      pitch: 60,
+      rotateEnable: false,
+      pitchEnable: false
+    })
+
+    map.on('click', function(e) {
+      let lnglat = e.lnglat
+      let position2 = [lnglat.getLng(), lnglat.getLat()]
+      console.log(position2)
+    })
+
+    map.AmbientLight = new AMap.Lights.AmbientLight([1, 1, 1], 0.5)
+    map.DirectionLight = new AMap.Lights.DirectionLight([0, 0, 1], [1, 1, 1], 1)
+
+    var object3Dlayer = new AMap.Object3DLayer()
+    object3Dlayer.setMap(map)
+
+    let gl_Polyrect = new AMapUtils.gl_Polyrect({
+      map: map,
+      object3DLayer: object3Dlayer,
+      coordinate: HANGZHOU_COORDINATE,
+      height: 200000,
+      position: HANGZHOU_POINT,
+      textClass: AMapUtils.NormalText,
+      textOption: {
+        text: '杭州',
+        textColor: 'red',
+        offsetTop: -20
+      }
+    })
+
+    gl_Polyrect.show()
+
+    function show() {
+      gl_Polyrect.show()
+    }
+
+    function hide() {
+      gl_Polyrect.hide()
+    }
+
+    function hideText() {
+      gl_Polyrect.getText().setMap(null)
+    }
+
+    function showText() {
+      gl_Polyrect.getText().setMap(map)
+    }
+
+    function randColor() {
+      return '#' + randHex() + randHex() + randHex()
+    }
+
+    function randHex() {
+      let num = randBetween(0, 256)
+      return num.toString(16)
+    }
+    // [minNumber,maxNumber)
+    function randBetween(minNumber, maxNumber) {
+      let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+      return num
+    }
+  </script>
+</html>

@@ -19,14 +19,10 @@
   <div id="map"></div>
   <button onclick="show()">显示</button>
   <button onclick="hide()">隐藏</button>
-  <button onclick="changeStroke()">修改边框样式</button>
-  <button onclick="changeFillStyle()">修改填充颜色</button>
-  <button onclick="hideText()">隐藏文字</button>
-  <button onclick="showText()">显示文字</button>
-  <button onclick="setRndStyle()">设置不同样式</button>
+  <button onclick="changeStroke()">展示涟漪效果</button>
+  <button onclick="changeFillStyle()">隐藏涟漪效果</button>
 </body>
 <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
-<script src="/temp/POINT_LIST.js"></script>
 <script src="/gdmap-utils.js"></script>
 <script>
   // 创建高德地图
@@ -34,77 +30,80 @@
     zoom: 7,
     center: [120.593342986658, 29.111016235593],
     viewMode: '3D',
-    pitch: 60
+    pitch: 60,
+    rotateEnable: false,
+    pitchEnable: false,
 
   });
-  let polyrectList = new AMapUtils.PolyrectList({
+  map.on('click', function (e) {
+    let lnglat = e.lnglat
+    let position = [lnglat.getLng(), lnglat.getLat()]
+    console.log(position)
+  })
+
+  // var text3d = null
+  // map.on('click', function (e) {
+  //   let lnglat = e.lnglat
+  //   let position = [lnglat.getLng(), lnglat.getLat()]
+  //   if (text3d) {
+  //     text3d.destroy()
+  //     text3d = null
+  //   }
+  //   text3d = new AMapUtils.Text3D({
+  //     map: map,
+  //     position: position,
+  //     text: '点位坐标',
+  //     textColor: 'blue',
+  //     mouseover: function () {
+  //       // console.log(this, '移入')
+  //       // this.showRipples()
+  //     },
+  //     mouseout: function () {
+  //       // console.log(this, '移出')
+  //       // this.closeRipples()
+  //     },
+  //     click: function () {
+  //       console.log(this, 'click')
+  //     }
+  //   })
+  // })
+
+  let position = [120.593342986658, 29.111016235593]
+  let text3d = new AMapUtils.Text3D({
     map: map,
-    strokeColor: 'red',
-    strokeOpacity: 0.8,
-    strokeWeight: 1,
-    fillColor: 'yellow',
-    fillOpacity: 0.3,
-    textClass: AMapUtils.NormalText,
-    // textClass: null,
-    textOption: {
-      textColor: 'red',
-      fontSize: 12
+    position: position,
+    text: '点位坐标',
+    textColor: 'blue',
+    mouseover: function () {
+      // console.log(this, '移入')
+      this.showRipples()
     },
-    click: function (polyrect) {
-      alert('click:' + JSON.stringify(polyrect.getExtData()))
+    mouseout: function () {
+      // console.log(this, '移出')
+      this.closeRipples()
     },
-    mouseout: function (polyrect) {
-      // console.log('移出', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'yellow',
-        fillOpacity: 0.3,
-      })
-    },
-    mouseover: function (polyrect, e) {
-      // console.log('移入', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'blue',
-        fillOpacity: 0.5
-      })
+    click: function () {
+      console.log(this, 'click')
+      alert('click')
     }
   })
-  let list = POINT_LIST.map(t => {
-    return {
-      checkCoordinate: t.checkCoordinate,
-      coordinate: t.checkCoordinate,
-      position: [t.longitude, t.latitude],
-      textOption: {
-        text: t.name
-      },
-      extData: t
-    }
-  })
-  polyrectList.setData(list)
+
 
   // 显示
   function show() {
-    polyrectList.setMap(map)
+    text3d.setMap(map)
   }
   // 隐藏
   function hide() {
-    polyrectList.setMap(null)
+    text3d.setMap(null)
   }
   // 修改网格样式
   function changeStroke() {
-    let opt = {
-      strokeColor: '#' + randHex() + randHex() + randHex(), // 边框颜色
-      strokeOpacity: randBetween(0, 100) / 100, // 边框透明度
-      strokeWeight: randBetween(0, 5) // 边框宽度
-    }
-    polyrectList.setPolygonStyle(opt)
+    text3d.showRipples()
   }
   // 修改填充颜色样式
   function changeFillStyle() {
-    let opt = {
-      fillColor: '#' + randHex() + randHex() + randHex(), // 填充颜色
-      fillOpacity: randBetween(0, 100) / 100, // 填充透明度
-    }
-    polyrectList.setPolygonStyle(opt)
+    text3d.closeRipples()
   }
 
   function setRndStyle() {

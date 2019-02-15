@@ -1,14 +1,17 @@
 import './NormalText.scss'
-import Overlays from '../base/Overlays';
+import Overlays from '../base/Overlays'
 import {
   getTextWidth
 } from '../../js/utils'
+
 /**
  * 不用高德原生的主要原因是,text会影响外面网格的鼠标事件,处理起来很麻烦
  * opt :
  * text : 显示的文字 String
  * textColor : 文字颜色 String #fff
  * position : 定位经纬度
+ * offsetTop:Number
+ * offsetLeft:Number
  */
 export default class NormalText extends Overlays {
   constructor(opt) {
@@ -21,6 +24,8 @@ export default class NormalText extends Overlays {
     this._paddingWidth = opt.paddingWidth || 20
     this._textSize = opt.textSize || 20
     this._paddingHeight = opt.paddingHeight || 10
+    this._offsetTop = opt.offsetTop || 0
+    this._offsetLeft = opt.offsetLeft || 0
     this._createMarker()
     // opt.map && this.setMap(opt.map)
   }
@@ -28,10 +33,13 @@ export default class NormalText extends Overlays {
   _createMarker() {
     let width = getTextWidth(this._text, this._textSize) + this._paddingWidth
     let height = this._textSize + this._paddingHeight
-    let dom = this._dom = this._createElement(height, width)
+    let dom = (this._dom = this._createElement(height, width))
     let marker = new AMap.Marker({
       position: this.getPosition(),
-      offset: new AMap.Pixel(-width / 2, -height / 2),
+      offset: new AMap.Pixel(
+        -width / 2 + this._offsetLeft,
+        -height / 2 + this._offsetTop
+      ),
       content: dom.body,
       bubble: true,
       zIndex: this.getzIndex()
@@ -70,7 +78,7 @@ export default class NormalText extends Overlays {
   getValue() {
     return this._text
   }
-  
+
   setValue(value) {
     this._text = value
     let text = this._dom.text

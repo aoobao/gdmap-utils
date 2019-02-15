@@ -9,7 +9,7 @@
   <style>
     #map {
       width: 800px;
-      height: 600px;
+      height: 500px;
       float: left;
     }
   </style>
@@ -17,13 +17,13 @@
 
 <body>
   <div id="map"></div>
-  <button onclick="show()">显示</button>
+  <!-- <button onclick="show()">显示</button>
   <button onclick="hide()">隐藏</button>
   <button onclick="changeStroke()">修改边框样式</button>
   <button onclick="changeFillStyle()">修改填充颜色</button>
   <button onclick="hideText()">隐藏文字</button>
   <button onclick="showText()">显示文字</button>
-  <button onclick="setRndStyle()">设置不同样式</button>
+  <button onclick="setRndStyle()">设置不同样式</button> -->
 </body>
 <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
 <script src="/temp/POINT_LIST.js"></script>
@@ -34,52 +34,65 @@
     zoom: 7,
     center: [120.593342986658, 29.111016235593],
     viewMode: '3D',
-    pitch: 60
+    pitch: 60,
+    mapStyle: 'amap://styles/716773a6cef1ca8a4da771984f22f0dc'
 
   });
-  let polyrectList = new AMapUtils.PolyrectList({
+
+  map.AmbientLight = new AMap.Lights.AmbientLight([1, 1, 1], 0.3);
+  map.DirectionLight = new AMap.Lights.DirectionLight([0, -1, 2], [1, 1, 1], 0.7);
+  var angle = 90;
+  changeLightDirection()
+
+  function changeLightDirection() {
+    angle += 3;
+    var dir = [
+      Math.cos(angle / 180 * Math.PI),
+      -Math.sin(angle / 180 * Math.PI),
+      2
+    ];
+    map.DirectionLight.setDirection(dir);
+    map.render();
+    // AMap.Util.requestAnimFrame(changeLightDirection);
+    setTimeout(() => {
+      changeLightDirection()
+    }, 100);
+  }
+
+  let polyrectList = new AMapUtils.gl_PolyrectList({
     map: map,
-    strokeColor: 'red',
-    strokeOpacity: 0.8,
-    strokeWeight: 1,
-    fillColor: 'yellow',
-    fillOpacity: 0.3,
-    textClass: AMapUtils.NormalText,
-    // textClass: null,
     textOption: {
-      textColor: 'red',
-      fontSize: 12
+      textColor: 'yellow',
+      fontSize: 12,
+      offsetTop: -20
     },
-    click: function (polyrect) {
-      alert('click:' + JSON.stringify(polyrect.getExtData()))
-    },
-    mouseout: function (polyrect) {
-      // console.log('移出', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'yellow',
-        fillOpacity: 0.3,
-      })
-    },
-    mouseover: function (polyrect, e) {
-      // console.log('移入', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'blue',
-        fillOpacity: 0.5
-      })
-    }
+    // textClass: null
   })
+  var z = -1
   let list = POINT_LIST.map(t => {
     return {
-      checkCoordinate: t.checkCoordinate,
       coordinate: t.checkCoordinate,
-      position: [t.longitude, t.latitude],
+      color: randColor(),
+      height: randBetween(5, 20) * 10000,
+      transparent: true,
       textOption: {
         text: t.name
       },
-      extData: t
+      position: [t.longitude, t.latitude],
     }
   })
   polyrectList.setData(list)
+
+
+  function randColor() {
+    // let temp = '#3695ff'.split(',')
+    let temp = '#3667ff,#4f7eff,#0febff,#139eff,#0078ff'.split(',')
+    // let z = randBetween(0, temp.length)
+    z++;
+    if (z >= temp.length) z = 0
+    return temp[z] + 'ee'
+    // return '#' + randHex() + randHex() + randHex() + 'cc'
+  }
 
   // 显示
   function show() {

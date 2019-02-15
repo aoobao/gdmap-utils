@@ -15,16 +15,16 @@ import {
 } from './package.json';
 
 const debug = process.env.NODE_ENV === 'development' ? true : false
+const NAME = 'AMapUtils'
 
-
-export default {
+let rst = {
   input: 'src/main.js',
-  output: {
+  output: [{
     file: debug ? 'test/gdmap-utils.js' : `dist/gdmap-utils.${version}.min.js`,
     format: 'umd',
-    name: 'AMapUtils',
+    name: NAME,
     sourcemap: debug,
-  },
+  }],
   plugins: [
     postcss({
       plugins: [autoprefixer]
@@ -39,8 +39,8 @@ export default {
     }),
     (!debug && uglify()),
     (debug && serve({
-      open: true,
-      openPage: '/polyrectlist/',
+      open: false,
+      openPage: '/TextQueue/',
       verbose: true,
       contentBase: 'test',
       host: 'localhost',
@@ -48,3 +48,5 @@ export default {
     })),
   ]
 };
+
+export default rst

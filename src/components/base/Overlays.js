@@ -12,7 +12,6 @@ export default class Overlays {
     this.__position = opt.position
     this.__zIndex = opt.zIndex || 10
     this.__extData = opt.extData
-    this.__show = false
     if (opt.map) {
       setTimeout(() => {
         this.setMap(opt.map)

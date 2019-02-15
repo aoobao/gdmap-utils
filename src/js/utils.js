@@ -68,7 +68,13 @@ export function getDiffObject(targetOpt, changeOpt) {
   }
   return changeFlag ? rst : null
 }
-
+/**
+ * 返回两个区域的交集
+ * @param {*} parentMin 
+ * @param {*} parentMax 
+ * @param {*} min 
+ * @param {*} max 
+ */
 export function getIntersection(parentMin, parentMax, min, max) {
   let minZoom = parentMin < min ? min : parentMin
   let maxZoom = parentMax > max ? max : parentMax
@@ -77,7 +83,7 @@ export function getIntersection(parentMin, parentMax, min, max) {
     maxZoom
   }
 }
-
+// 合并obj
 export function getMergeObject(...objs) {
   let rst = objs.reduce((pre, sur) => {
     if (!sur) return pre
@@ -87,4 +93,31 @@ export function getMergeObject(...objs) {
     }
   }, {})
   return rst
+}
+
+// 求角度
+export function getAngle(px, py, mx, my) {
+  var x = Math.abs(px - mx);
+  var y = Math.abs(py - my);
+  var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+  if (z == 0) return 0;
+  var cos = y / z;
+  var radina = Math.acos(cos); //用反三角函数求弧度
+
+  var angle = 180 * radina / Math.PI; //将弧度转换成角度
+  //因为算出来的值是[0,90),需要转成[0,360)
+  if (mx >= px) {
+    if (my >= py) {
+      angle = 90 - angle;
+    } else {
+      angle = 270 + angle;
+    }
+  } else {
+    if (my >= py) {
+      angle = 90 + angle;
+    } else {
+      angle = 270 - angle;
+    }
+  }
+  return angle;
 }

@@ -147,7 +147,7 @@ export default class PolyrectList extends Overlays {
       list.forEach(polyrect => {
         polyrect.destroy()
       })
-      this.setOverlays([])
+      this._polyrects = []
     }
   }
 

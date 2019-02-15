@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="/gdmap-utils.js"></script>
+<script>
+  var position = [120.593342986658, 29.111016235593]
+  var minX = 117.84
+  var minY = 27.59
+  var maxX = 122.08
+  var maxY = 32.04
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: position,
+    viewMode: '3D',
+    pitch: 60,
+    rotateEnable: false,
+    pitchEnable: false,
+  });
+
+  map.on('click', function (e) {
+    let lnglat = e.lnglat
+    let position2 = [lnglat.getLng(), lnglat.getLat()]
+    console.log(position2)
+
+  })
+
+  var textQueue = new AMapUtils.TextQueue({
+    map: map,
+    textColor: '#fff'
+  })
+
+  var z = 0
+  
+  runfont()
+
+  function runfont() {
+    pushFont()
+    setTimeout(() => {
+      runfont()
+    }, randBetween(0, 300));
+  }
+
+  function pushFont() {
+    var text = '文字' + ++z
+    let x = randBetween(minX * 1000, maxX * 1000) / 1000
+    let y = randBetween(minY * 1000, maxY * 1000) / 1000
+    textQueue.push({
+      text: text,
+      position: [x, y],
+      textColor: randColor()
+    })
+  }
+
+  function randColor() {
+    return '#' + randHex() + randHex() + randHex()
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+</script>
+
+</html>

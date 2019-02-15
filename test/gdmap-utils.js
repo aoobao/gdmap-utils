@@ -175,6 +175,9 @@
 
   var MAX_ZOOM = 19; // 地图最大级别
 
+  var DEFAULT_IMAGE_WIDTH = 25;
+  var DEFAULT_IMAGE_HEIGHT = 35;
+
   /**
    * 如果value为undefined则返回ifundefineValue,否则返回value
    * @param {*} value 传入值
@@ -229,6 +232,42 @@
     var temp = str.replace(/[^\\x00-\\xff]/g, 'aa');
     return temp.length * fontSize / 2;
   }
+  /**
+   * 筛选出修改目标opt的不相同的属性
+   * @param {Object} targetOpt 目标opt
+   * @param {Object} changeOpt 需要改变的opt
+   * @returns {Object} 返回差异对象(changeopt中的属性值和targetOpt中相同时返回null)
+   */
+
+  function getDiffObject(targetOpt, changeOpt) {
+    var rst = {};
+    var changeFlag = false;
+
+    for (var key in changeOpt) {
+      var targetValue = targetOpt[key];
+
+      if (targetValue === undefined) {
+        console.warn('目标对象未找到该参数:' + key);
+      }
+
+      var value = changeOpt[key];
+
+      if (targetValue !== value) {
+        rst[key] = value;
+        changeFlag = true;
+      }
+    }
+
+    return changeFlag ? rst : null;
+  }
+  /**
+   * 返回两个区域的交集
+   * @param {*} parentMin 
+   * @param {*} parentMax 
+   * @param {*} min 
+   * @param {*} max 
+   */
+
   function getIntersection(parentMin, parentMax, min, max) {
     var minZoom = parentMin < min ? min : parentMin;
     var maxZoom = parentMax > max ? max : parentMax;
@@ -236,7 +275,8 @@
       minZoom: minZoom,
       maxZoom: maxZoom
     };
-  }
+  } // 合并obj
+
   function getMergeObject() {
     for (var _len = arguments.length, objs = new Array(_len), _key = 0; _key < _len; _key++) {
       objs[_key] = arguments[_key];
@@ -247,7 +287,45 @@
       return _objectSpread({}, pre, sur);
     }, {});
     return rst;
+  } // 求角度
+
+  function getAngle(px, py, mx, my) {
+    var x = Math.abs(px - mx);
+    var y = Math.abs(py - my);
+    var z = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+    if (z == 0) return 0;
+    var cos = y / z;
+    var radina = Math.acos(cos); //用反三角函数求弧度
+
+    var angle = 180 * radina / Math.PI; //将弧度转换成角度
+    //因为算出来的值是[0,90),需要转成[0,360)
+
+    if (mx >= px) {
+      if (my >= py) {
+        angle = 90 - angle;
+      } else {
+        angle = 270 + angle;
+      }
+    } else {
+      if (my >= py) {
+        angle = 90 + angle;
+      } else {
+        angle = 270 - angle;
+      }
+    }
+
+    return angle;
   }
+
+  var Utils = /*#__PURE__*/Object.freeze({
+    getDefaultByundefined: getDefaultByundefined,
+    transposePolyrect: transposePolyrect,
+    getTextWidth: getTextWidth,
+    getDiffObject: getDiffObject,
+    getIntersection: getIntersection,
+    getMergeObject: getMergeObject,
+    getAngle: getAngle
+  });
 
   /**
    * 地图覆盖物基类
@@ -271,7 +349,6 @@
         this.__position = opt.position;
         this.__zIndex = opt.zIndex || 10;
         this.__extData = opt.extData;
-        this.__show = false;
 
         if (opt.map) {
           setTimeout(function () {
@@ -449,6 +526,8 @@
    * text : 显示的文字 String
    * textColor : 文字颜色 String #fff
    * position : 定位经纬度
+   * offsetTop:Number
+   * offsetLeft:Number
    */
 
   var NormalText =
@@ -476,6 +555,8 @@
         this._paddingWidth = opt.paddingWidth || 20;
         this._textSize = opt.textSize || 20;
         this._paddingHeight = opt.paddingHeight || 10;
+        this._offsetTop = opt.offsetTop || 0;
+        this._offsetLeft = opt.offsetLeft || 0;
 
         this._createMarker(); // opt.map && this.setMap(opt.map)
 
@@ -491,7 +572,7 @@
 
         var marker = new AMap.Marker({
           position: this.getPosition(),
-          offset: new AMap.Pixel(-width / 2, -height / 2),
+          offset: new AMap.Pixel(-width / 2 + this._offsetLeft, -height / 2 + this._offsetTop),
           content: dom.body,
           bubble: true,
           zIndex: this.getzIndex()
@@ -1051,7 +1132,7 @@
           list.forEach(function (polyrect) {
             polyrect.destroy();
           });
-          this.setOverlays([]);
+          this._polyrects = [];
         }
       }
     }, {
@@ -1069,34 +1150,942 @@
     return PolyrectList;
   }(Overlays);
 
+  var css$1 = ".dcmap-text3d-container {\n  width: 0;\n  display: flex;\n  flex-flow: column nowrap;\n  justify-content: space-between;\n  align-items: center;\n  -webkit-transform-style: preserve-3d;\n          transform-style: preserve-3d; }\n  .dcmap-text3d-container .map-point-text-dom {\n    width: 500px;\n    display: flex;\n    justify-content: center;\n    font-size: 16px;\n    pointer-events: none; }\n  .dcmap-text3d-container .map-point-img-dom {\n    width: 25px;\n    height: 35px;\n    margin: 3px 0;\n    background-image: url(\"http://qn.fengyitong.name/point.png\"); }\n  .dcmap-text3d-container .map-point-small-circle {\n    position: absolute;\n    width: 54px;\n    height: 54px;\n    bottom: -20px;\n    left: 50%;\n    margin-left: -27px;\n    background-color: #0080fe;\n    opacity: 0.5;\n    border-radius: 50%;\n    -webkit-animation: delayLiving 1.5s linear infinite;\n            animation: delayLiving 1.5s linear infinite;\n    display: none; }\n  .dcmap-text3d-container .map-point-large-circle {\n    position: absolute;\n    width: 116px;\n    height: 116px;\n    bottom: -50px;\n    left: 50%;\n    margin-left: -58px;\n    background-color: #0080fe;\n    border-radius: 50%;\n    opacity: 0;\n    -webkit-animation: bigliving 1.5s linear infinite;\n            animation: bigliving 1.5s linear infinite;\n    display: none; }\n\n@-webkit-keyframes delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@-webkit-keyframes bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n";
+  styleInject(css$1);
+
+  /**
+   * opt :
+   * text 文字内容
+   * textColor 文字颜色
+   * isShowRipples 是否显示涟漪
+   * imageOption : {
+   *  height,width,src
+   * }
+   * className 标记点自定义class
+   * click, 点击事件
+   * mouseover, 鼠标移入事件
+   * mouseout 鼠标移出事件
+   * 
+   * methods
+   * showRipples    //显示涟漪效果
+   * closeRipples   //关闭涟漪效果
+   * getValue   //获取文字内容
+   * setValue   // 设置文字内容
+   */
+
   var Text3D =
   /*#__PURE__*/
   function (_Overlays) {
     _inherits(Text3D, _Overlays);
 
-    function Text3D() {
+    function Text3D(opt) {
+      var _this;
+
       _classCallCheck(this, Text3D);
 
-      return _possibleConstructorReturn(this, _getPrototypeOf(Text3D).apply(this, arguments));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(Text3D).call(this, opt));
+      _this._clickHandle = _this._clickHandle.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+      _this._mouseOut = _this._mouseOut.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+      _this._mouseOver = _this._mouseOver.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+
+      _this._initialize(opt || {});
+
+      return _this;
     }
 
     _createClass(Text3D, [{
-      key: "setMap",
-      value: function setMap(map) {
-        _get(_getPrototypeOf(Text3D.prototype), "setMap", this).call(this, map);
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._text = opt.text || '';
+        this._textColor = opt.textColor;
+        this._showRipples = !!opt.isShowRipples;
+        this._imageOption = opt.imageOption || {};
+        this._className = opt.className;
+        this._click = opt.click;
+        this._mouseover = opt.mouseover;
+        this._mouseout = opt.mouseout;
 
-        console.log('text3d');
+        this._createMarker();
+      } // 展示涟漪效果
+
+    }, {
+      key: "showRipples",
+      value: function showRipples() {
+        var dom = this._dom;
+        dom.smallCircle.style.display = 'block';
+        dom.largeCircle.style.display = 'block';
+        this._showRipples = true;
+      }
+    }, {
+      key: "closeRipples",
+      value: function closeRipples() {
+        var dom = this._dom;
+        dom.smallCircle.style.display = '';
+        dom.largeCircle.style.display = '';
+        this._showRipples = false;
+      }
+    }, {
+      key: "_clickHandle",
+      value: function _clickHandle(e) {
+        typeof this._click === 'function' && this._click.call(this, this.getExtData(), e);
+      }
+    }, {
+      key: "_mouseOut",
+      value: function _mouseOut(e) {
+        typeof this._mouseout === 'function' && this._mouseout.call(this, this.getExtData(), e);
+      }
+    }, {
+      key: "_mouseOver",
+      value: function _mouseOver(e) {
+        typeof this._mouseover === 'function' && this._mouseover.call(this, this.getExtData(), e);
+      }
+    }, {
+      key: "_createMarker",
+      value: function _createMarker() {
+        var dom = this._dom = this._createElement();
+
+        var height = this._imageOption.height || DEFAULT_IMAGE_HEIGHT;
+        dom.body.addEventListener('mouseenter', this._mouseOver);
+        dom.body.addEventListener('mouseleave', this._mouseOut);
+        dom.body.addEventListener('click', this._clickHandle);
+        var marker = new AMap.Marker({
+          position: this.__position,
+          offset: new AMap.Pixel(0, -height - 20),
+          content: dom.body,
+          zIndex: this.getzIndex()
+        });
+        this.setOverlays(marker);
+
+        if (this._showRipples) {
+          this.showRipples();
+        }
+      }
+    }, {
+      key: "getValue",
+      value: function getValue() {
+        // return this._dom.text.innerText
+        return this._text;
+      }
+    }, {
+      key: "setValue",
+      value: function setValue(value) {
+        this._dom.text.innerText = strText;
+        this._text = strText;
+      }
+    }, {
+      key: "_createElement",
+      value: function _createElement() {
+        var height = this._imageOption.height || DEFAULT_IMAGE_HEIGHT;
+        var body = document.createElement('div');
+        body.className = 'dcmap-text3d-container ' + this._className;
+        body.style.height = height + 30 + 'px'; // 涟漪效果
+
+        var smallCircle = document.createElement('div');
+        smallCircle.className = 'map-point-small-circle';
+        body.appendChild(smallCircle);
+        var largeCircle = document.createElement('div');
+        largeCircle.className = 'map-point-large-circle';
+        body.appendChild(largeCircle);
+        var text = document.createElement('span');
+        text.className = 'map-point-text-dom';
+        text.style.color = this._textColor;
+        text.innerText = this._text;
+        body.appendChild(text);
+        var img = document.createElement('div');
+        img.className = 'map-point-img-dom';
+        img.style.width = this._imageOption.width || DEFAULT_IMAGE_WIDTH;
+        img.style.height = height;
+
+        if (this._imageOption.src) {
+          img.style.backgroundImage = "url('".concat(this._imageOption.src, "')");
+        }
+
+        body.appendChild(img);
+        return {
+          body: body,
+          text: text,
+          img: img,
+          smallCircle: smallCircle,
+          largeCircle: largeCircle
+        };
       }
     }]);
 
     return Text3D;
   }(Overlays);
 
+  /**
+   * opt
+   * map 高德地图实例(必传)
+   * center 雷达圆心 (必传)
+   * target 雷达扫描半径所在点(必传) 用来确定雷达扫描起始点以及半径
+   * coverNumber 雷达扫描消失参数 (与speed共同定义雷达尾巴宽度,默认0.05)
+   * speed 雷达扫描速度(多少秒扫完一圈)
+   * fillStyle 雷达扫描颜色
+   * callback 雷达扫描回调
+   */
+
+  var RadarChart =
+  /*#__PURE__*/
+  function () {
+    function RadarChart(opt) {
+      _classCallCheck(this, RadarChart);
+
+      this._draw = this._draw.bind(this);
+
+      this._initialize(opt || {});
+    }
+
+    _createClass(RadarChart, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._map = opt.map;
+        this._center = opt.center;
+        this._target = opt.target;
+        this._speed = opt.speed || 60;
+        this._coverNumber = opt.coverNumber || 0.2;
+        this._fillStyle = opt.fillStyle || 'rgba(0,200,0,0.7)';
+        this._callback = opt.callback;
+        this._isStart = false;
+        this._deg = 360 - ~~getAngle.apply(void 0, _toConsumableArray(this._center).concat(_toConsumableArray(this._target)));
+
+        this._createCanvasLayer();
+      }
+    }, {
+      key: "_createCanvasLayer",
+      value: function _createCanvasLayer() {
+        var canvas = this._canvas = document.createElement('canvas');
+        this._ctx = canvas.getContext('2d');
+        var positionObj = getPixel(this._center, this._target);
+
+        var minPixel = this._map.lngLatToContainer(positionObj.minPosition);
+
+        var maxPixel = this._map.lngLatToContainer(positionObj.maxPosition); //canvas.width = this._width = maxPixel.getX() - minPixel.getX()
+        //canvas.height = this._height = minPixel.getY() - maxPixel.getY()
+
+
+        canvas.width = canvas.height = this._width = this._height = maxPixel.getX() - minPixel.getX(); // console.log(this._width, this._height, '宽高')
+
+        this._clayer = new AMap.CanvasLayer({
+          canvas: canvas,
+          bounds: new AMap.Bounds(positionObj.minPosition, positionObj.maxPosition),
+          zIndex: 100
+        }); // this._canvas2 = document.createElement('canvas')
+        // this._ctx2 = this._canvas2.getContext('2d')
+        // this._canvas2.width = this._canvas2.height = canvas.width
+        // this._clayer2 = new AMap.CanvasLayer({
+        //   canvas: this._canvas2,
+        //   bounds: new AMap.Bounds(positionObj.minPosition, positionObj.maxPosition),
+        //   zIndex: 101
+        // })
+        // this._drawCircle()
+
+        this._clayer.setMap(this._map); // this._clayer2.setMap(this._map)
+
+      }
+    }, {
+      key: "start",
+      value: function start() {
+        if (this._isStart) return;
+        this._isStart = true;
+
+        this._draw();
+      }
+    }, {
+      key: "stop",
+      value: function stop() {
+        var _this = this;
+
+        if (this._isStart) {
+          this._isStart = false;
+          setTimeout(function () {
+            _this._ctx.clearRect(0, 0, _this._width, _this._height);
+          }, 1);
+        }
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        this.stop();
+
+        this._clayer.setMap(null);
+
+        this._clayer = null;
+      }
+    }, {
+      key: "_drawCircle",
+      value: function _drawCircle() {
+        var radius = (this._width > this._height ? this._height : this._width) / 2;
+        var ctx = this._ctx2;
+        ctx.clearRect(0, 0, this._width, this._height);
+        ctx.fillStyle = this._fillStyle;
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.moveTo(this._width / 2, this._height / 2);
+        ctx.arc(this._width / 2, this._height / 2, radius, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }, {
+      key: "_draw",
+      value: function _draw() {
+        var startDeg = this._deg;
+        this._deg += 360 / this._speed;
+        if (this._deg >= 360) this._deg = this._deg - 360;
+
+        if (!this._isStart) {
+          return;
+        }
+
+        this._drawRadar();
+
+        this._cover(); // ctx.fill()
+
+
+        this._clayer.reFresh();
+
+        if (typeof this._callback === 'function') {
+          this._callback.call(this, {
+            start: startDeg,
+            end: this._deg > startDeg ? this._deg : this._deg + startDeg
+          });
+        }
+
+        window.requestAnimationFrame(this._draw);
+      }
+    }, {
+      key: "_drawRadar",
+      value: function _drawRadar() {
+        var deg = this._deg;
+        var ctx = this._ctx;
+        var radius = (this._width > this._height ? this._height : this._width) / 2;
+        ctx.save();
+        ctx.fillStyle = this._fillStyle;
+        ctx.beginPath();
+        ctx.moveTo(this._width / 2, this._height / 2);
+        ctx.arc(this._width / 2, this._height / 2, radius, (-360 / this._speed + deg) / 180 * Math.PI, deg / 180 * Math.PI); // ctx.arc(this._width / 2, this._height / 2, radius, 0, 2 / 180 * Math.PI)
+
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }, {
+      key: "_cover",
+      value: function _cover() {
+        var ctx = this._ctx;
+        ctx.save();
+        var radius = (this._width > this._height ? this._height : this._width) / 2;
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.fillStyle = "rgba(0,0,0,".concat(this._coverNumber, ")"); // let centerPixel = this._map.lngLatToContainer(this._center)
+        // ctx.arc(this._width / 2, this._height / 2, radius, 0, 2 * Math.PI)
+
+        ctx.rect(0, 0, this._width, this._height);
+        ctx.fill();
+        ctx.restore();
+      }
+    }, {
+      key: "_clearRect",
+      value: function _clearRect() {
+        var ctx = this._ctx;
+        ctx.clearRect(0, 0, this.width, this.height);
+      }
+    }]);
+
+    return RadarChart;
+  }();
+
+  function getPixel(center, target) {
+    var dis = Math.sqrt(Math.pow(target[0] - center[0], 2) + Math.pow(target[1] - center[1], 2));
+    return {
+      minPosition: [center[0] - dis, center[1] - dis],
+      maxPosition: [center[0] + dis, center[1] + dis]
+    };
+  }
+
+  /**
+   * opt
+   * map
+   * textColor
+   * font
+   */
+  var TextQueue =
+  /*#__PURE__*/
+  function () {
+    function TextQueue(opt) {
+      _classCallCheck(this, TextQueue);
+
+      this._draw = this._draw.bind(this);
+
+      this._initialize(opt || {});
+    }
+
+    _createClass(TextQueue, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._map = opt.map;
+        this._list = [];
+        this._textColor = opt.textColor || '#fff';
+        this._font = opt.font || '20px Arial';
+        this._start = false;
+
+        this._createLayer();
+      }
+    }, {
+      key: "_createLayer",
+      value: function _createLayer() {
+        var canvas = this._canvas = document.createElement('canvas');
+        this._ctx = canvas.getContext('2d');
+
+        var size = this._map.getSize();
+
+        canvas.width = this._width = size.width;
+        canvas.height = this._height = size.height;
+        this._cus = new AMap.CustomLayer(canvas, {
+          map: this._map,
+          zIndex: 100
+        });
+        this._cus.render = this.reload.bind(this);
+      }
+    }, {
+      key: "reload",
+      value: function reload() {
+        this._list = this._list.map(function (t) {
+          return _objectSpread({}, t, {
+            _pixel: null
+          });
+        });
+      }
+    }, {
+      key: "_draw",
+      value: function _draw() {
+        if (this.getMap() != null) {
+          this._clearCanvas();
+
+          this._drawCanvas();
+
+          if (this._list.length > 0) {
+            window.requestAnimationFrame(this._draw);
+          } else {
+            this._start = false;
+          }
+        } else {
+          this._start = false;
+        }
+      }
+    }, {
+      key: "_clearCanvas",
+      value: function _clearCanvas() {
+        var ctx = this._ctx;
+        ctx.clearRect(0, 0, this._width, this._height);
+      }
+    }, {
+      key: "_drawCanvas",
+      value: function _drawCanvas() {
+        if (this.getMap() == null) return; // console.log('draw')
+
+        var ctx = this._ctx;
+        var now = Date.now();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = this._textColor;
+        ctx.font = this._font;
+
+        for (var i = 0; i < this._list.length; i++) {
+          var obj = this._list[i];
+          var timer = (now - obj._time) / 1000;
+
+          if (timer > 3) {
+            obj._del = true;
+            continue;
+          }
+
+          var pixel = obj._pixel || this._map.lngLatToContainer(obj.position);
+
+          obj._pixel = pixel;
+          ctx.save();
+          ctx.translate(pixel.getX(), pixel.getY());
+          var scale = 1; // 缩放因子
+
+          var opacity = 1;
+
+          if (timer < 1) {
+            // 放大
+            scale = scale / timer;
+            opacity = timer;
+          } else if (timer > 2) {
+            // 缩小
+            // scale = 3 - timer
+            opacity = 3 - timer;
+            scale = opacity;
+          }
+
+          if (scale != 1) {
+            ctx.scale(scale, scale);
+          }
+
+          if (opacity != 1) {
+            ctx.globalAlpha = opacity;
+          }
+
+          if (obj.textColor) {
+            ctx.fillStyle = obj.textColor;
+          }
+
+          if (obj.font) {
+            ctx.font = obj.font;
+          }
+
+          ctx.fillText(obj.text, 0, 0);
+          ctx.restore();
+        }
+
+        this._list = this._list.filter(function (t) {
+          return !t._del;
+        });
+      }
+      /**
+       * 加入到弹幕队列
+       * @param {Object} objs 
+       * position : [x,y]
+       * text : String 文本信息
+       * textColor : 文字颜色
+       * font : String
+       */
+
+    }, {
+      key: "push",
+      value: function push() {
+        var _this = this;
+
+        for (var _len = arguments.length, objs = new Array(_len), _key = 0; _key < _len; _key++) {
+          objs[_key] = arguments[_key];
+        }
+
+        objs.forEach(function (obj) {
+          _this._list.push(_objectSpread({}, obj, {
+            _time: Date.now()
+          }));
+        });
+
+        if (!this._start) {
+          this._start = true;
+
+          this._draw();
+        }
+      }
+    }, {
+      key: "setMap",
+      value: function setMap(map) {
+        this._map = map;
+
+        this._cus.setMap(map);
+
+        if (map == null) {
+          this._start = false;
+        } else if (!this._start) {
+          this._start = true;
+
+          this._draw();
+        }
+      }
+    }, {
+      key: "getMap",
+      value: function getMap() {
+        return this._map || null;
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        this.setMap(null);
+        this._cus = null;
+      }
+    }]);
+
+    return TextQueue;
+  }();
+
+  var gl_Overlays =
+  /*#__PURE__*/
+  function () {
+    function gl_Overlays(opt) {
+      _classCallCheck(this, gl_Overlays);
+
+      this.__initialize(opt || {});
+    }
+
+    _createClass(gl_Overlays, [{
+      key: "__initialize",
+      value: function __initialize(opt) {
+        this.CLASS_NAME = this.constructor.name;
+        this.__object3DLayer = opt.object3DLayer;
+        this.__map = opt.map;
+        this.__extData = opt.extData;
+      } // 对overlays递归调用methodName方法.
+
+      /**
+       * 
+       * @param {Object} overlays 
+       * @param {Function} method 
+       * @param {*} methodArguments 
+       */
+
+    }, {
+      key: "__callMethod",
+      value: function __callMethod(obj, methodName, overlays) {
+        var _this = this;
+
+        if (overlays == null) return;
+
+        if (Array.isArray(overlays)) {
+          overlays.forEach(function (o) {
+            // o[methodName](...methodArguments)
+            _this.__callMethod(obj, methodName, o);
+          });
+        } else if (overlays != undefined) {
+          // method(overlays, ...methodArguments)
+          obj[methodName](overlays);
+        } else {
+          console.warn('传入值不是实例对象', overlays);
+        }
+      }
+    }, {
+      key: "getExtData",
+      value: function getExtData() {
+        return this.__extData;
+      }
+    }, {
+      key: "setExtData",
+      value: function setExtData(data) {
+        this.__extData = data;
+      }
+    }, {
+      key: "getMap",
+      value: function getMap() {
+        return this.__map;
+      }
+    }, {
+      key: "setMap",
+      value: function setMap(map) {
+        this.__map = map;
+      }
+    }, {
+      key: "getObject3DLayer",
+      value: function getObject3DLayer() {
+        return this.__object3DLayer || null;
+      }
+    }, {
+      key: "setObject3DLayer",
+      value: function setObject3DLayer(object3dLayer) {
+        this.__object3DLayer = object3dLayer;
+      } // object3d
+
+    }, {
+      key: "getOverlays",
+      value: function getOverlays() {
+        return this.__overlays;
+      }
+    }, {
+      key: "setOverlays",
+      value: function setOverlays(overlays) {
+        this.__overlays = overlays;
+      }
+    }, {
+      key: "show",
+      value: function show() {
+        var object3DLayer = this.__object3DLayer;
+
+        if (object3DLayer) {
+          var overlays = this.getOverlays(); // this.__callMethod(overlays, object3DLayer.add)
+
+          this.__callMethod(object3DLayer, 'add', overlays);
+        }
+      }
+    }, {
+      key: "hide",
+      value: function hide() {
+        var object3DLayer = this.__object3DLayer;
+
+        if (object3DLayer) {
+          var overlays = this.getOverlays(); // this.__callMethod(overlays, object3DLayer.remove)
+
+          this.__callMethod(object3DLayer, 'remove', overlays);
+        }
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        this.hide();
+        this.__object3DLayer = null;
+      }
+    }]);
+
+    return gl_Overlays;
+  }();
+
+  /**
+   * opt :
+   * map 必传
+   * object3DLayer
+   * coordinate
+   * color
+   * height
+   * transparent
+   * extData
+   * 
+   * position
+   * textOption
+   * textClass
+   */
+
+  var gl_Polyrect =
+  /*#__PURE__*/
+  function (_gl_Overlays) {
+    _inherits(gl_Polyrect, _gl_Overlays);
+
+    function gl_Polyrect(opt) {
+      var _this;
+
+      _classCallCheck(this, gl_Polyrect);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(gl_Polyrect).call(this, opt));
+
+      _this._initialize(opt || {});
+
+      _this._clickHandle = _this._clickHandle.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+      return _this;
+    }
+
+    _createClass(gl_Polyrect, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._height = opt.height || 5000;
+        this._color = opt.color || '#0088ffcc';
+        this._transparent = getDefaultByundefined(opt.transparent, true);
+        var list = transposePolyrect(opt.coordinate);
+        this._coordinate = this.lngLatToGeodeticCoord(list);
+        this._click = opt.click;
+        this._position = opt.position;
+        this._textOption = opt.textOption || {
+          text: opt.text || '未输入文字内容',
+          textColor: opt.textColor || 'red'
+        };
+        var TextClass = getDefaultByundefined(opt.textClass, NormalText);
+        if (TextClass) this._createText(TextClass);
+      }
+    }, {
+      key: "_clickHandle",
+      value: function _clickHandle() {}
+    }, {
+      key: "_createText",
+      value: function _createText(TextClass) {
+        if (this._textObj) {
+          typeof this._textObj.destroy === 'function' && this._textObj.destroy();
+          this._textObj = null;
+        }
+
+        var opt = _objectSpread({
+          map: this.getMap(),
+          position: this._position
+        }, this._textOption);
+
+        this._textObj = new TextClass(opt);
+      }
+    }, {
+      key: "getOverlays",
+      value: function getOverlays() {
+        var prism = this._prism;
+
+        if (!prism) {
+          prism = new AMap.Object3D.Prism({
+            path: this._coordinate,
+            height: this._height,
+            color: this._color
+          });
+          prism.transparent = this._transparent;
+          this._prism = prism;
+        } // console.log(prism)
+
+
+        return prism;
+      }
+    }, {
+      key: "show",
+      value: function show() {
+        _get(_getPrototypeOf(gl_Polyrect.prototype), "show", this).call(this);
+
+        if (this._textObj) {
+          this._textObj.setMap(this.getMap());
+        }
+      }
+    }, {
+      key: "hide",
+      value: function hide() {
+        _get(_getPrototypeOf(gl_Polyrect.prototype), "hide", this).call(this);
+
+        if (this._textObj) {
+          this._textObj.setMap(null);
+        }
+      }
+    }, {
+      key: "getText",
+      value: function getText() {
+        return this._textObj || null;
+      }
+    }, {
+      key: "lngLatToGeodeticCoord",
+      value: function lngLatToGeodeticCoord(list) {
+        var map = this.getMap();
+
+        for (var i = 0; i < list.length; i++) {
+          var area = list[i];
+
+          for (var s = 0; s < area.length; s++) {
+            var g = map.lngLatToGeodeticCoord(area[s]);
+            area[s] = g;
+          }
+        }
+
+        return list;
+      }
+    }]);
+
+    return gl_Polyrect;
+  }(gl_Overlays);
+
+  /**
+   * opt
+   * map 必传
+   * object3DLayer
+   * color
+   * height
+   * transparent
+   * textOption
+   * textClass
+   * click
+   */
+
+  var gl_PolyrectList =
+  /*#__PURE__*/
+  function (_gl_Overlays) {
+    _inherits(gl_PolyrectList, _gl_Overlays);
+
+    function gl_PolyrectList(opt) {
+      var _this;
+
+      _classCallCheck(this, gl_PolyrectList);
+
+      if (!opt.object3DLayer) {
+        opt.object3DLayer = new AMap.Object3DLayer();
+        opt.object3DLayer.setMap(opt.map);
+      }
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(gl_PolyrectList).call(this, opt));
+      _this._clickHandle = _this._clickHandle.bind(_assertThisInitialized(_assertThisInitialized(_this)));
+
+      _this._initialize(opt);
+
+      return _this;
+    }
+
+    _createClass(gl_PolyrectList, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._height = opt.height || 5000;
+        this._color = opt.color || '#0088ffcc';
+        this._transparent = getDefaultByundefined(opt.transparent, true);
+        this._textOption = opt.textOption;
+        this._textClass = opt.textClass;
+        this._click = opt.click;
+        this._polyrects = [];
+      }
+    }, {
+      key: "_clickHandle",
+      value: function _clickHandle(polyrect, data) {
+        typeof this._click === 'function' && this._click(polyrect, data);
+      }
+      /**
+       * 
+       * @param {Array(opt)} list 
+       * opt : 
+       * coordinate 必传
+       * color
+       * height
+       * transparent
+       * extData
+       * textOption
+       * position 有文字需传
+       * textClass
+       */
+
+    }, {
+      key: "setData",
+      value: function setData(list) {
+        var _this2 = this;
+
+        var show = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        this.clear();
+        var g = getDefaultByundefined;
+        this._polyrects = list.map(function (item) {
+          var opt = {
+            map: _this2.getMap(),
+            object3DLayer: _this2.getObject3DLayer(),
+            coordinate: item.coordinate,
+            color: g(item.color, _this2._color),
+            height: g(item.height, _this2._height),
+            transparent: g(item.transparent, _this2._transparent),
+            extData: item.extData || item,
+            position: item.position,
+            textClass: g(item.textClass, _this2._textClass),
+            textOption: getMergeObject(_this2._textOption, item.textOption)
+          };
+          return new gl_Polyrect(opt);
+        });
+
+        if (show) {
+          this.show();
+        }
+      }
+    }, {
+      key: "getOverlays",
+      value: function getOverlays() {
+        // return [...this._polyrects]
+        return this._polyrects.map(function (polyrect) {
+          return polyrect.getOverlays();
+        });
+      }
+    }, {
+      key: "clear",
+      value: function clear() {
+        var list = this.getOverlays();
+
+        if (list && list.length) {
+          list.forEach(function (polyrect) {
+            polyrect.destroy();
+          });
+        }
+
+        this._polyrects = [];
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        _get(_getPrototypeOf(gl_PolyrectList.prototype), "destroy", this).call(this);
+      }
+    }]);
+
+    return gl_PolyrectList;
+  }(gl_Overlays);
+
   var main = {
     Polyrect: Polyrect,
     NormalText: NormalText,
     Text3D: Text3D,
-    PolyrectList: PolyrectList
+    PolyrectList: PolyrectList,
+    RadarChart: RadarChart,
+    TextQueue: TextQueue,
+    Utils: Utils,
+    gl_Polyrect: gl_Polyrect,
+    gl_PolyrectList: gl_PolyrectList
   };
 
   return main;
