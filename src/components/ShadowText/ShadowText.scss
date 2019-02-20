@@ -1,0 +1,17 @@
+.dcmap-shadowtext-container {
+  perspective: 2000px;
+  position: relative;
+  .dcmap-shadowtext-text {
+    display: flex;
+    justify-content: center;
+  }
+  .dcmap-shadowtext-shadow{
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotateX(65deg);
+    background: radial-gradient(ellipse, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1) 40%, rgba(0, 0, 0, 0) 60%);
+  }
+}

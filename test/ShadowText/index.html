@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <button onclick="show()">显示</button>
+  <button onclick="hide()">隐藏</button>
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="/gdmap-utils.js"></script>
+<script>
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: [120.593342986658, 29.111016235593],
+    viewMode: '3D',
+    pitch: 60,
+    rotateEnable: false,
+    pitchEnable: false,
+
+  });
+  map.on('click', function (e) {
+    let lnglat = e.lnglat
+    let position = [lnglat.getLng(), lnglat.getLat()]
+    console.log(position)
+    let t = new AMapUtils.ShadowText({
+      map: map,
+      position: position,
+      // text: '点位',
+      text: position.toString(),
+      textColor: '#000',
+      textSize: 30,
+      shaderRatio: 1,
+      mouseover: function () {
+        console.log(this, '移入')
+      },
+      mouseout: function () {
+        console.log(this, '移出')
+      },
+      click: function () {
+        console.log(this, 'click')
+        alert('click')
+      }
+    })
+  })
+
+  let position = [120.593342986658, 29.111016235593]
+  let text = new AMapUtils.ShadowText({
+    map: map,
+    position: position,
+    text: '温州',
+    textColor: '#000',
+    textSize: 30,
+    shaderRatio: 1.3,
+    mouseover: function () {
+      console.log(this, '移入')
+    },
+    mouseout: function () {
+      console.log(this, '移出')
+    },
+    click: function () {
+      console.log(this, 'click')
+      alert('click')
+    }
+  })
+
+
+  // 显示
+  function show() {
+    text.setMap(map)
+  }
+  // 隐藏
+  function hide() {
+    text.setMap(null)
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+</script>
+
+</html>

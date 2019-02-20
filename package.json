@@ -1,8 +1,8 @@
 {
-  "name": "gdmap-utils",
-  "version": "1.0.0",
+  "name": "amap-utils",
+  "version": "0.1.2",
   "description": "高德地图二次封装",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development rollup -c -w",
     "build": "cross-env NODE_ENV=production rollup -c"
@@ -11,9 +11,13 @@
     "type": "git",
     "url": "git+https://github.com/aoobao/gdmap-utils.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["AMap"],
+  "author": "aoobao",
+  "files": [
+    "package.json",
+    "lib"
+  ],
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/aoobao/gdmap-utils/issues"
   },

@@ -24,6 +24,10 @@ let rst = {
     format: 'umd',
     name: NAME,
     sourcemap: debug,
+  }, {
+    file: 'lib/index.js',
+    format: 'umd',
+    name: NAME
   }],
   plugins: [
     postcss({
