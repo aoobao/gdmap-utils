@@ -1,7 +1,6 @@
 import babel from 'rollup-plugin-babel'
 import resolve from 'rollup-plugin-node-resolve'
 import commonjs from 'rollup-plugin-commonjs'
-import serve from 'rollup-plugin-serve'
 import postcss from 'rollup-plugin-postcss'
 import autoprefixer from 'autoprefixer';
 // import cssnano from 'cssnano';
@@ -14,16 +13,15 @@ import {
   version
 } from './package.json';
 
-const debug = process.env.NODE_ENV === 'development' ? true : false
 const NAME = 'AMapUtils'
 
 let rst = {
   input: 'src/main.js',
   output: [{
-    file: debug ? 'test/gdmap-utils.js' : `dist/gdmap-utils.${version}.min.js`,
+    file: 'lib/index.js',
     format: 'umd',
     name: NAME,
-    sourcemap: debug,
+    sourcemap: false,
   }],
   plugins: [
     postcss({
@@ -37,15 +35,7 @@ let rst = {
     replace({
       ENV: JSON.stringify(process.env.NODE_ENV || 'development')
     }),
-    (!debug && uglify()),
-    (debug && serve({
-      open: false,
-      openPage: '/TextQueue/',
-      verbose: true,
-      contentBase: 'test',
-      host: 'localhost',
-      port: 8085
-    })),
+    uglify()
   ]
 };
 

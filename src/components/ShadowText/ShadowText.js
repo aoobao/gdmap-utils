@@ -59,4 +59,25 @@ export default class ShadowText extends Overlays {
       shadow
     }
   }
+
+  getTextColor() {
+    return this._textColor
+  }
+
+  setTextColor(color) {
+    this._textColor = color
+    let text = this._dom.text
+    text.style.color = this._textColor
+  }
+  
+  getValue() {
+    return this._text
+  }
+
+  setValue(value) {
+    this._text = value
+    let text = this._dom.text
+    text.innerText = this._text
+  }
+
 }

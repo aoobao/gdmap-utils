@@ -1773,6 +1773,30 @@
           shadow: shadow
         };
       }
+    }, {
+      key: "getTextColor",
+      value: function getTextColor() {
+        return this._textColor;
+      }
+    }, {
+      key: "setTextColor",
+      value: function setTextColor(color) {
+        this._textColor = color;
+        var text = this._dom.text;
+        text.style.color = this._textColor;
+      }
+    }, {
+      key: "getValue",
+      value: function getValue() {
+        return this._text;
+      }
+    }, {
+      key: "setValue",
+      value: function setValue(value) {
+        this._text = value;
+        var text = this._dom.text;
+        text.innerText = this._text;
+      }
     }]);
 
     return ShadowText;
