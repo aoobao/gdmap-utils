@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      #map {
+        width: 800px;
+        height: 500px;
+        float: left;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <button onclick="show()">显示</button>
+    <button onclick="hide()">隐藏</button>
+    <button onclick="btn1()">更新高度</button>
+    <button onclick="btn2()">随机颜色</button>
+    <button onclick="btn3()">统一变色</button>
+    <button onclick="btn4()">改变半径</button>
+    <button onclick="btn5()">随机半径</button>
+  </body>
+  <script
+    type="text/javascript"
+    src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"
+  ></script>
+  <script src="/temp/POINT_LIST.js"></script>
+  <script src="/gdmap-utils.js"></script>
+  <script>
+    // 创建高德地图
+    var map = new AMap.Map('map', {
+      zoom: 7,
+      center: [120.593342986658, 29.111016235593],
+      viewMode: '3D',
+      pitch: 60
+    })
+
+    let meshList = new AMapUtils.gl_RegularPrismList({
+      map: map,
+      radius: 100000,
+      height: 100000,
+      segment: 6,
+      topColor: [0, 0, 1, 0.6],
+      topFaceColor: [0, 0, 1, 0.4],
+      bottomColor: [0, 0, 1, 0.9],
+      transparent: false
+    })
+    let list = POINT_LIST.map(t => {
+      return {
+        height: randBetween(10000, 1000000),
+        position: [t.longitude, t.latitude],
+        extData: t
+      }
+    })
+    meshList.setData(list)
+
+    function show() {
+      meshList.show()
+    }
+
+    function hide() {
+      meshList.hide()
+    }
+
+    function btn1() {
+      var points = POINT_LIST.map(t => {
+        return {
+          id: t.id,
+          height: randBetween(10000, 1000000)
+        }
+      })
+      meshList.updateHeight(points)
+    }
+
+    function btn2() {
+      var points = POINT_LIST.map(t => {
+        let opt = {
+          id: t.id,
+          topColor: randColor(), //顶部的颜色
+          bottomColor: randColor(), // 底部的颜色
+          topFaceColor: randColor() // 顶部面的颜色
+        }
+        return opt
+      })
+      meshList.updateColor(points)
+    }
+
+    function btn3() {
+      let opt = {
+        topColor: randColor(), //顶部的颜色
+        bottomColor: randColor(), // 底部的颜色
+        topFaceColor: randColor() // 顶部面的颜色
+      }
+      meshList.updateColor(opt)
+    }
+
+    function btn4() {
+      let opt = {
+        radius: randBetween(50000, 200000)
+      }
+      meshList.updateRadius(opt)
+    }
+
+    function btn5() {
+      var opts = POINT_LIST.map(t => {
+        let opt = {
+          id: t.id,
+          radius: randBetween(50000, 200000)
+        }
+        return opt
+      })
+      meshList.updateRadius(opts)
+    }
+
+    function randColor() {
+      // return '#' + randHex() + randHex() + randHex()
+      return [rnd(), rnd(), rnd(), 1]
+    }
+
+    function rnd() {
+      return randBetween(0, 50) / 100
+    }
+    // [minNumber,maxNumber)
+    function randBetween(minNumber, maxNumber) {
+      let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+      return num
+    }
+  </script>
+</html>

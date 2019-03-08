@@ -8,9 +8,13 @@ import RadarChart from './components/RadarChart/RadarChart'
 import TextQueue from './components/TextQueue/TextQueue'
 import ShadowText from './components/ShadowText/ShadowText'
 import * as Utils from './js/utils'
+import * as Math from './js/math'
 
 import gl_Polyrect from './components/gl_Polyrect/gl_Polyrect'
 import gl_PolyrectList from './components/gl_PolyrectList/gl_PolyrectList'
+import gl_RegularPrism from './components/gl_RegularPrism/gl_RegularPrism'
+import gl_RegularPrismList from './components/gl_RegularPrismList/gl_RegularPrismList'
+
 export default {
   Overlays,
   Polyrect,
@@ -22,5 +26,7 @@ export default {
   ShadowText,
   Utils,
   gl_Polyrect,
-  gl_PolyrectList
+  gl_PolyrectList,
+  gl_RegularPrism,
+  gl_RegularPrismList
 }

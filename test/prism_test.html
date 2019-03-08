@@ -40,15 +40,19 @@
   // map.DirectionLight = new AMap.Lights.DirectionLight([0, 0, 1], [1, 1, 1], 1);
   var center_3d = map.lngLatToGeodeticCoord(position);
 
-  var topColor = [0, 1, 1, 0.9];
-  var topFaceColor = [0, 1, 1, 0.4];
+  var topColor = [0, 0, 1, 0.7];
+  var topFaceColor = [0, 0, 1, 0.4];
   var bottomColor = [0, 0, 1, 0.9];
 
-  addRegularPrism(center_3d, 32, 1600, 5000) //圆柱
+  var height = 80000
+  var nowHeight = 0
+  var segment = 6
+  var radius = 20000
+  var mesh = addRegularPrism(center_3d, segment, nowHeight, radius) //圆柱
+  setHeight()
 
   //添加一个圆柱体
   function addRegularPrism(center, segment, height, radius) {
-
     var cylinder = new AMap.Object3D.Mesh();
     var geometry = cylinder.geometry;
     var verticesLength = segment * 2;
@@ -88,7 +92,42 @@
 
     cylinder.transparent = true; // 如果使用了透明颜色，请设置true
     object3Dlayer.add(cylinder);
+
+    return cylinder
   };
+
+
+  function setHeight() {
+    nowHeight += 2000
+    setVertices(mesh, center_3d, segment, nowHeight, radius)
+    if (nowHeight < height) {
+      requestAnimationFrame(setHeight)
+    }
+  }
+
+  function setVertices(cylinder, center, segment, height, radius) {
+    var verticesLength = segment * 2
+    var path = []
+    var vertices = []
+    for (let i = 0; i < segment; i++) {
+      var angle = 2 * Math.PI * i / segment;
+      var x = center.x + Math.cos(angle) * radius;
+      var y = center.y + Math.sin(angle) * radius;
+      path.push([x, y]);
+      vertices.push(x, y, 0)
+      vertices.push(x, y, -height)
+    }
+
+    // 构建顶面三角形,为了区分顶面点和侧面点使用不一样的颜色,所以需要独立的顶点
+    for (var i = 0; i < segment; i += 1) {
+      vertices.push(...vertices.slice(i * 6 + 3, i * 6 + 6))
+    }
+
+    cylinder.geometry.vertices.splice(0, cylinder.geometry.vertices.length, ...vertices)
+
+    cylinder.needUpdate = true
+    cylinder.reDraw()
+  }
 
 
 

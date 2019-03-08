@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      float: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <button onclick="show()">显示</button>
+  <button onclick="hide()">隐藏</button>
+  <button onclick="changeHeight()">改变高度</button>
+  <button onclick="changeColor()">改变颜色</button>
+  <button onclick="changeRadius()">改变半径</button>
+  <button onclick="changeAnimateHeight()">缓动高度示例</button>
+
+</body>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script src="/temp/POINT.js"></script>
+<script src="/gdmap-utils.js"></script>
+<script>
+  var position = [120.593342986658, 29.111016235593]
+  // 创建高德地图
+  var map = new AMap.Map('map', {
+    zoom: 7,
+    center: position,
+    viewMode: '3D',
+    pitch: 60,
+    rotateEnable: false,
+    pitchEnable: false
+  })
+
+  var object3Dlayer = new AMap.Object3DLayer()
+  object3Dlayer.setMap(map)
+
+  var obj = new AMapUtils.gl_RegularPrism({
+    map: map,
+    object3DLayer: object3Dlayer,
+    radius: 100000,
+    height: 100000,
+    segment: 5,
+    // color: [0, 0, 1, 0.7],
+    topColor: [0, 0, 1, 0.6],
+    topFaceColor: [0, 0, 1, 0.4],
+    bottomColor: [0, 0, 1, 0.9],
+    transparent: false,
+    position: HANGZHOU_POINT
+  })
+
+  obj.show()
+
+  map.on('click', function (e) {
+    let lnglat = e.lnglat
+    let position2 = [lnglat.getLng(), lnglat.getLat()]
+    // console.log(position2)
+    obj.setPosition(position2)
+  })
+
+  function show() {
+    obj.show()
+  }
+
+  function hide() {
+    obj.hide()
+  }
+
+  function changeHeight() {
+    var height = randBetween(10000, 1000000)
+    obj.setHeight(height)
+  }
+
+  function changeRadius() {
+    var radius = randBetween(100000, 500000)
+    obj.setRadius(radius)
+  }
+
+  function changeColor() {
+    let opt = {
+      topColor: randColor(), //顶部的颜色
+      bottomColor: randColor(), // 底部的颜色
+      topFaceColor: randColor(), // 顶部面的颜色
+    }
+    // console.log(opt)
+    obj.setColor(opt)
+  }
+
+  let _animateHeight = 0 // 目标高度
+  let _animateIndex = null
+
+  function changeAnimateHeight() {
+    _animateHeight = randBetween(10000, 1000000) // 设置目标高度
+    if (_animateIndex != null) return // 防止重复点击
+    _changeAnimateHeight()
+  }
+
+  function _changeAnimateHeight() {
+    const step = 30000
+    var height = obj.getHeight()
+    var stepNumber = _animateHeight > height ? height + step : height - step
+    var animateHeight = getMedian(height, stepNumber, _animateHeight)
+    obj.setHeight(animateHeight)
+    if (animateHeight != _animateHeight) {
+      _animateIndex = requestAnimationFrame(_changeAnimateHeight)
+    } else {
+      _animateIndex = null
+    }
+  }
+
+  function randColor() {
+    // return '#' + randHex() + randHex() + randHex()
+    return [rnd(), rnd(), rnd(), 1]
+  }
+
+  function rnd() {
+    return randBetween(0, 50) / 100
+  }
+
+  function randHex() {
+    let num = randBetween(0, 256)
+    return num.toString(16)
+  }
+  // [minNumber,maxNumber)
+  function randBetween(minNumber, maxNumber) {
+    let num = ~~(Math.random() * (maxNumber - minNumber)) + minNumber
+    return num
+  }
+
+  // 3个值取中间值
+  function getMedian(a, b, c) {
+    if ((b - a) * (a - c) >= 0) {
+      return a;
+    } else if ((a - b) * (b - c) >= 0) {
+      return b;
+    } else {
+      return c;
+    }
+  }
+</script>
+
+</html>

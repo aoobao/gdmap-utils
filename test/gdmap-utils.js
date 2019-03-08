@@ -479,6 +479,22 @@
 
     return angle;
   }
+  function uuid() {
+    var s = [];
+    var hexDigits = "0123456789abcdef";
+
+    for (var i = 0; i < 36; i++) {
+      s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+    }
+
+    s[14] = "4"; // bits 12-15 of the time_hi_and_version field to 0010
+
+    s[19] = hexDigits.substr(s[19] & 0x3 | 0x8, 1); // bits 6-7 of the clock_seq_hi_and_reserved to 01
+
+    s[8] = s[13] = s[18] = s[23] = "-";
+    var uuid = s.join("");
+    return uuid;
+  }
 
   var Utils = /*#__PURE__*/Object.freeze({
     getDefaultByundefined: getDefaultByundefined,
@@ -487,7 +503,8 @@
     getDiffObject: getDiffObject,
     getIntersection: getIntersection,
     getMergeObject: getMergeObject,
-    getAngle: getAngle
+    getAngle: getAngle,
+    uuid: uuid
   });
 
   function styleInject(css, ref) {
@@ -1802,6 +1819,22 @@
     return ShadowText;
   }(Overlays);
 
+  /**
+   * 3个数中取中位数
+   * @param {Number} a 
+   * @param {Number} b 
+   * @param {Number} c 
+   */
+  function getMedian(a, b, c) {
+    if ((b - a) * (a - c) >= 0) {
+      return a;
+    } else if ((a - b) * (b - c) >= 0) {
+      return b;
+    } else {
+      return c;
+    }
+  }
+
   var gl_Overlays =
   /*#__PURE__*/
   function () {
@@ -1839,7 +1872,7 @@
             // o[methodName](...methodArguments)
             _this.__callMethod(obj, methodName, o);
           });
-        } else if (overlays != undefined) {
+        } else if (overlays !== undefined) {
           // method(overlays, ...methodArguments)
           obj[methodName](overlays);
         } else {
@@ -2174,6 +2207,570 @@
     return gl_PolyrectList;
   }(gl_Overlays);
 
+  /**
+   * 生成一个多边形几何体
+   * opt
+   * map
+   * object3DLayer
+   *
+   * radius : Int 半径
+   * height : Int 高度
+   * segment : Int 分割数量
+   * topColor :Array<Number> [r,g,b,q] rgba (0-1之间取值) 必须4个值
+   * topFaceColor : 同上
+   * bottomColor : 同上
+   * color : 颜色(优先使用上面的颜色)
+   * transparent Bool 透明
+   * position [x,y]
+   */
+
+  var gl_RegularPrism =
+  /*#__PURE__*/
+  function (_gl_Overlays) {
+    _inherits(gl_RegularPrism, _gl_Overlays);
+
+    function gl_RegularPrism(opt) {
+      var _this;
+
+      _classCallCheck(this, gl_RegularPrism);
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(gl_RegularPrism).call(this, opt));
+
+      _this._initialize(opt || {});
+
+      return _this;
+    }
+
+    _createClass(gl_RegularPrism, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._height = getDefaultByundefined(opt.height, 1000);
+        this._radius = getDefaultByundefined(opt.radius, 1000);
+        this._segment = getDefaultByundefined(opt.segment, 4);
+        this._transparent = getDefaultByundefined(opt.transparent, true);
+        this._color = opt.color || [0, 0, 1, 0.4];
+        this._topColor = opt.topColor;
+        this._bottomColor = opt.bottomColor;
+        this._topFaceColor = opt.topFaceColor;
+        this._position = opt.position;
+
+        this._createMesh();
+      }
+    }, {
+      key: "getTopColor",
+      value: function getTopColor() {
+        return this._topColor || this._color;
+      }
+    }, {
+      key: "getBottomColor",
+      value: function getBottomColor() {
+        return this._bottomColor || this._color;
+      }
+    }, {
+      key: "getTopFaceColor",
+      value: function getTopFaceColor() {
+        return this._topFaceColor || this._color;
+      }
+    }, {
+      key: "_createMesh",
+      value: function _createMesh() {
+        var segment = this._segment;
+        var radius = this._radius;
+        var center = this.getMap().lngLatToGeodeticCoord(this._position);
+        var height = this._height;
+        var topColor = this.getTopColor();
+        var bottomColor = this.getBottomColor();
+        var topFaceColor = this.getTopFaceColor(); // let bottomColor =
+
+        var cylinder = new AMap.Object3D.Mesh();
+        var geometry = cylinder.geometry;
+        var verticesLength = this._segment * 2;
+        var path = [];
+
+        for (var i = 0; i < segment; i++) {
+          var _geometry$vertexColor;
+
+          var angle = 2 * Math.PI * i / segment;
+          var x = center.x + Math.cos(angle) * radius;
+          var y = center.y + Math.sin(angle) * radius;
+          path.push([x, y]);
+          geometry.vertices.push(x, y, 0); //增加底部顶点
+
+          geometry.vertices.push(x, y, -height); //增加顶部顶点
+          // 加载颜色
+
+          (_geometry$vertexColor = geometry.vertexColors).push.apply(_geometry$vertexColor, _toConsumableArray(bottomColor).concat(_toConsumableArray(topColor)));
+
+          var bottomIndex = i * 2;
+          var topIndex = bottomIndex + 1;
+          var nextBottomIndex = (bottomIndex + 2) % verticesLength;
+          var nextTopIndex = (bottomIndex + 3) % verticesLength;
+          geometry.faces.push(bottomIndex, topIndex, nextTopIndex); //侧面三角形1
+
+          geometry.faces.push(bottomIndex, nextTopIndex, nextBottomIndex); //侧面三角形2
+        } // 因为顶部可能是单独的颜色,不可以使用原来的faces索引,需要单独给顶点增加索引(通用使用)
+
+
+        for (var _i = 0; _i < segment; _i++) {
+          var _geometry$vertices, _geometry$vertexColor2;
+
+          // 读到所有的顶部的顶点,加在vertices最后面
+          (_geometry$vertices = geometry.vertices).push.apply(_geometry$vertices, _toConsumableArray(geometry.vertices.slice(_i * 6 + 3, _i * 6 + 6)));
+
+          (_geometry$vertexColor2 = geometry.vertexColors).push.apply(_geometry$vertexColor2, _toConsumableArray(topFaceColor));
+        }
+
+        var triangles = AMap.GeometryUtil.triangulateShape(path);
+        var offset = segment * 2;
+
+        for (var v = 0; v < triangles.length; v += 3) {
+          geometry.faces.push(triangles[v] + offset, triangles[v + 2] + offset, triangles[v + 1] + offset);
+        }
+
+        cylinder.transparent = this._transparent;
+        this.setOverlays(cylinder);
+      }
+      /**
+       * 修改圆柱体颜色
+       * @param {Object} colors 
+       * topColor :Array<Number> [r,g,b,q] rgba (0-1之间取值) 必须4个值
+       * topFaceColor : 同上
+       * bottomColor : 同上
+       * color : 颜色(优先使用上面的颜色)
+       */
+
+    }, {
+      key: "setColor",
+      value: function setColor(colors) {
+        var draw = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        if (colors.color) this._color = colors.color;
+        if (colors.topColor) this._topColor = colors.topColor;
+        if (colors.bottomColor) this._bottomColor = colors.bottomColor;
+        if (colors.topFaceColor) this._topFaceColor = colors.topFaceColor;
+
+        this._updateColor(draw);
+      }
+    }, {
+      key: "getColor",
+      value: function getColor() {
+        return {
+          topColor: this._topColor,
+          bottomColor: this._bottomColor,
+          topFaceColor: this._topFaceColor,
+          color: this._color
+        };
+      }
+    }, {
+      key: "_updateColor",
+      value: function _updateColor() {
+        var _mesh$geometry$vertex;
+
+        var draw = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+        var mesh = this.getOverlays();
+        var vertexColors = [];
+        var segment = this._segment;
+        var bottomColor = this.getBottomColor();
+        var topColor = this.getTopColor();
+        var topFaceColor = this.getTopFaceColor();
+
+        for (var i = 0; i < segment; i++) {
+          vertexColors.push.apply(vertexColors, _toConsumableArray(bottomColor).concat(_toConsumableArray(topColor)));
+        } // 顶部颜色
+
+
+        for (var _i2 = 0; _i2 < segment; _i2++) {
+          vertexColors.push.apply(vertexColors, _toConsumableArray(topFaceColor));
+        }
+
+        (_mesh$geometry$vertex = mesh.geometry.vertexColors).splice.apply(_mesh$geometry$vertex, [0, mesh.geometry.vertexColors.length].concat(vertexColors));
+
+        mesh.needUpdate = true;
+
+        if (draw) {
+          mesh.reDraw();
+        }
+      }
+    }, {
+      key: "getHeight",
+      value: function getHeight() {
+        return this._height;
+      } // 设置圆柱体高度
+
+    }, {
+      key: "setHeight",
+      value: function setHeight() {
+        var height = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 10000;
+        var draw = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        this._height = height;
+        var mesh = this.getOverlays();
+        var vertices = mesh.geometry.vertices;
+        var segment = this._segment;
+
+        for (var i = 0; i < segment; i++) {
+          // 修改每个顶点的高度值
+          var _z = i * 6 + 5;
+
+          vertices[_z] = -height;
+        } // 后面还有单独的顶部顶点(顶部顶点通用设计,给单独顶点)
+
+
+        var z = segment * 6 - 1; // (拿到最后一个圆柱体索引,索引从0开始所以-1)
+
+        for (var _i3 = z + 3; _i3 < vertices.length; _i3 += 3) {
+          vertices[_i3] = -height;
+        }
+
+        mesh.needUpdate = true;
+
+        if (draw) {
+          mesh.reDraw();
+        }
+      }
+    }, {
+      key: "getRadius",
+      value: function getRadius() {
+        return this._radius;
+      } // 修改半径后所有的x,y坐标需要重新计算,和所有顶点重绘性能区别不大,不单独写了
+
+    }, {
+      key: "setRadius",
+      value: function setRadius() {
+        var radius = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 10000;
+        var draw = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        this._radius = radius;
+
+        this._updateVertices(draw);
+      }
+    }, {
+      key: "getPosition",
+      value: function getPosition() {
+        return this._position;
+      }
+    }, {
+      key: "setPosition",
+      value: function setPosition() {
+        var position = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [120, 30];
+        var draw = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        this._position = position;
+
+        this._updateVertices(draw);
+      } // 对顶点坐标进行刷新(segment不能发生改变)
+
+    }, {
+      key: "_updateVertices",
+      value: function _updateVertices() {
+        var _mesh$geometry$vertic;
+
+        var draw = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+        var segment = this._segment;
+        var radius = this._radius;
+        var center = this.getMap().lngLatToGeodeticCoord(this._position);
+        var height = this._height;
+        var mesh = this.getOverlays();
+        var vertices = [];
+
+        for (var i = 0; i < segment; i++) {
+          var angle = 2 * Math.PI * i / segment;
+          var x = center.x + Math.cos(angle) * radius;
+          var y = center.y + Math.sin(angle) * radius;
+          vertices.push(x, y, 0, x, y, -height);
+        }
+
+        for (var _i4 = 0; _i4 < segment; _i4++) {
+          vertices.push.apply(vertices, _toConsumableArray(vertices.slice(_i4 * 6 + 3, _i4 * 6 + 6)));
+        }
+
+        (_mesh$geometry$vertic = mesh.geometry.vertices).splice.apply(_mesh$geometry$vertic, [0, mesh.geometry.vertices.length].concat(vertices));
+
+        mesh.needUpdate = true;
+
+        if (draw) {
+          mesh.reDraw();
+        }
+      }
+    }, {
+      key: "reDraw",
+      value: function reDraw() {
+        var overlays = this.getOverlays();
+        overlays.reDraw(); // this.__callMethod(overlays, 'reDraw', null)
+      }
+    }]);
+
+    return gl_RegularPrism;
+  }(gl_Overlays);
+
+  /**
+   * opt
+   * map 必传
+   * object3DLayer
+   * radius : Int 半径
+   * height : Int 高度
+   * segment : Int 分割数量
+   * topColor :Array<Number> [r,g,b,q] rgba (0-1之间取值) 必须4个值
+   * topFaceColor : 同上
+   * bottomColor : 同上
+   * color : 颜色(优先使用上面的颜色)
+   * transparent Bool 透明
+   */
+
+  var gl_RegularPrismList =
+  /*#__PURE__*/
+  function (_gl_Overlays) {
+    _inherits(gl_RegularPrismList, _gl_Overlays);
+
+    function gl_RegularPrismList(opt) {
+      var _this;
+
+      _classCallCheck(this, gl_RegularPrismList);
+
+      if (!opt.object3DLayer) {
+        opt.object3DLayer = new AMap.Object3DLayer();
+        opt.object3DLayer.setMap(opt.map);
+      }
+
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(gl_RegularPrismList).call(this, opt));
+
+      _this._initialize(opt || {});
+
+      return _this;
+    }
+
+    _createClass(gl_RegularPrismList, [{
+      key: "_initialize",
+      value: function _initialize(opt) {
+        this._height = getDefaultByundefined(opt.height, 1000);
+        this._radius = getDefaultByundefined(opt.radius, 1000);
+        this._segment = getDefaultByundefined(opt.segment, 4);
+        this._transparent = getDefaultByundefined(opt.transparent, true);
+        this._color = opt.color || [0, 0, 1, 0.4];
+        this._topColor = opt.topColor;
+        this._bottomColor = opt.bottomColor;
+        this._topFaceColor = opt.topFaceColor;
+        this._animateCache = {};
+      }
+    }, {
+      key: "getTopColor",
+      value: function getTopColor() {
+        return this._topColor || this._color;
+      }
+    }, {
+      key: "getBottomColor",
+      value: function getBottomColor() {
+        return this._bottomColor || this._color;
+      }
+    }, {
+      key: "getTopFaceColor",
+      value: function getTopFaceColor() {
+        return this._topFaceColor || this._color;
+      }
+    }, {
+      key: "setData",
+      value: function setData(list) {
+        var _this2 = this;
+
+        var show = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+        this.clear();
+        this._meshs = list.map(function (item) {
+          var height = item.height || _this2._height;
+          var opt = {
+            map: _this2.getMap(),
+            object3DLayer: _this2.getObject3DLayer(),
+            position: item.position,
+            radius: item.radius || _this2._radius,
+            height: height,
+            segment: item.segment || _this2._segment,
+            topColor: item.topColor || _this2.getTopColor(),
+            bottomColor: item.bottomColor || _this2.getBottomColor(),
+            topFaceColor: item.topFaceColor || _this2.getTopFaceColor(),
+            transparent: getDefaultByundefined(item.transparent, _this2._transparent),
+            extData: item.extData || item
+          };
+          var mesh = new gl_RegularPrism(opt); // mesh.__id = Math.random()
+
+          mesh.__id = uuid();
+          return mesh;
+        });
+
+        if (show) {
+          this.show();
+        }
+      }
+    }, {
+      key: "updateHeight",
+      value: function updateHeight(list) {
+        var _this3 = this;
+
+        var equalsFunc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : equals;
+        var animate = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 20000;
+
+        var meshs = _toConsumableArray(this._meshs);
+
+        list.forEach(function (item) {
+          for (var i = 0; i < meshs.length; i++) {
+            var mesh = meshs[i];
+            var data = mesh.getExtData();
+
+            if (equalsFunc(item, data)) {
+              if (animate) {
+                var id = mesh.__id;
+
+                if (_this3._animateCache[id]) {
+                  _this3._animateCache[id].sourceHeight = item.height;
+                } else {
+                  _this3._animateCache[id] = {
+                    mesh: mesh,
+                    sourceHeight: item.height,
+                    step: animate,
+                    index: null
+                  };
+
+                  _this3._animateHeight(id);
+                }
+              } else {
+                mesh.setHeight(item.height);
+              }
+
+              meshs.slice(i, 1);
+              break;
+            }
+          }
+        });
+      }
+      /**
+       * 更新颜色
+       * opt : colorOpt or Array<colorOpt>(当为数组时,colorOpt可以添加标记字段(如id),在equalsFunc中判断返回相同mesh的对象设置颜色)
+       * topColor :Array<Number> [r,g,b,q] rgba (0-1之间取值) 必须4个值
+       * topFaceColor : 同上
+       * bottomColor : 同上
+       * color : 颜色(优先使用上面的颜色)
+       *
+       * @param {Array/Object} opt
+       * @param {Function} equalsFunc
+       */
+
+    }, {
+      key: "updateColor",
+      value: function updateColor(opt) {
+        var equalsFunc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : equals;
+
+        if (Array.isArray(opt)) {
+          var meshs = _toConsumableArray(this._meshs);
+
+          var list = opt;
+          list.forEach(function (item) {
+            for (var i = 0; i < meshs.length; i++) {
+              var mesh = meshs[i];
+              var data = mesh.getExtData();
+
+              if (equalsFunc(item, data)) {
+                mesh.setColor(item);
+                meshs.slice(i, 1);
+                break;
+              }
+            }
+          });
+        } else {
+          this._meshs.forEach(function (mesh) {
+            mesh.setColor(opt);
+          });
+        }
+      }
+      /**
+       * 更新几何体半径(当opt为数组时,代表每个几何体单独半径设置,可标记相应字段再equalsFunc中比对,默认为id)
+       * @param {Array/Object} opt
+       * @param {Function} equalsFunc
+       */
+
+    }, {
+      key: "updateRadius",
+      value: function updateRadius(opt) {
+        var equalsFunc = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : equals;
+
+        if (Array.isArray(opt)) {
+          var meshs = _toConsumableArray(this._meshs);
+
+          var list = opt;
+          list.forEach(function (item) {
+            for (var i = 0; i < meshs.length; i++) {
+              var mesh = meshs[i];
+              var data = mesh.getExtData();
+
+              if (equalsFunc(item, data)) {
+                mesh.setRadius(item.radius);
+                meshs.slice(i, 1);
+                break;
+              }
+            }
+          });
+        } else {
+          this._meshs.forEach(function (mesh) {
+            mesh.setRadius(opt.radius);
+          });
+        }
+      }
+    }, {
+      key: "_animateHeight",
+      value: function _animateHeight(id) {
+        var _this4 = this;
+
+        var source = this._animateCache[id];
+        var mesh = source.mesh;
+        var sourceHeight = source.sourceHeight;
+        var height = mesh.getHeight();
+        var step = source.step;
+        var stepHeight = sourceHeight > height ? height + step : height - step;
+        var nextHeight = getMedian(height, stepHeight, sourceHeight);
+        mesh.setHeight(nextHeight);
+
+        if (nextHeight !== sourceHeight) {
+          this._animateCache[id].index = requestAnimationFrame(function () {
+            _this4._animateHeight(id);
+          });
+        } else {
+          delete this._animateCache[id];
+        }
+      }
+    }, {
+      key: "getOverlays",
+      value: function getOverlays() {
+        if (this._meshs && this._meshs.length) {
+          return this._meshs.map(function (t) {
+            return t.getOverlays();
+          });
+        } else {
+          return null;
+        }
+      }
+    }, {
+      key: "clear",
+      value: function clear() {
+        if (this._meshs && this._meshs.length) {
+          this._meshs.forEach(function (mesh) {
+            mesh.destroy();
+          });
+
+          this._meshs = [];
+        }
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        for (var id in this._animateCache) {
+          var mesh = this._animateCache[key];
+          if (mesh.index) cancelAnimationFrame(mesh.index);
+        }
+
+        _get(_getPrototypeOf(gl_RegularPrismList.prototype), "destroy", this).call(this);
+      }
+    }]);
+
+    return gl_RegularPrismList;
+  }(gl_Overlays);
+
+  function equals(listData, extData) {
+    return listData.id === extData.id;
+  }
+
   var main = {
     Overlays: Overlays,
     Polyrect: Polyrect,
@@ -2185,7 +2782,9 @@
     ShadowText: ShadowText,
     Utils: Utils,
     gl_Polyrect: gl_Polyrect,
-    gl_PolyrectList: gl_PolyrectList
+    gl_PolyrectList: gl_PolyrectList,
+    gl_RegularPrism: gl_RegularPrism,
+    gl_RegularPrismList: gl_RegularPrismList
   };
 
   return main;

@@ -22,7 +22,7 @@ export default class gl_Overlays {
         // o[methodName](...methodArguments)
         this.__callMethod(obj, methodName, o)
       })
-    } else if (overlays != undefined) {
+    } else if (overlays !== undefined) {
       // method(overlays, ...methodArguments)
       obj[methodName](overlays)
     } else {
