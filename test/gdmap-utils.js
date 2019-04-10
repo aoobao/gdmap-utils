@@ -2328,6 +2328,7 @@
         }
 
         cylinder.transparent = this._transparent;
+        cylinder.__class = this;
         this.setOverlays(cylinder);
       }
       /**
@@ -2511,6 +2512,9 @@
    * bottomColor : 同上
    * color : 颜色(优先使用上面的颜色)
    * transparent Bool 透明
+   * click function 点击
+   * mouseover function 移入
+   * mouseout function 移出
    */
 
   var gl_RegularPrismList =
@@ -2546,7 +2550,61 @@
         this._topColor = opt.topColor;
         this._bottomColor = opt.bottomColor;
         this._topFaceColor = opt.topFaceColor;
+        this._click = opt.click;
+        this._mouseover = opt.mouseover;
+        this._mouseout = opt.mouseout;
+        this.__activePrism = null;
         this._animateCache = {};
+
+        this._initEvent();
+      } // 初始化鼠标事件
+
+    }, {
+      key: "_initEvent",
+      value: function _initEvent() {
+        if (typeof this._click === 'function') {
+          this.getMap().on('click', this._clickHandle, this);
+        }
+
+        if (typeof this._mouseover === 'function' || typeof this._mouseout === 'function') {
+          this.getMap().on('mousemove', this._mouseMove, this);
+        }
+      }
+    }, {
+      key: "_clickHandle",
+      value: function _clickHandle(e) {
+        var map = this.getMap();
+        var mesh = map.getObject3DByContainerPos(e.pixel, [this.getObject3DLayer()], false);
+
+        if (mesh != null && mesh.object.__class) {
+          var prism = mesh.object.__class;
+          typeof this._click === 'function' && this._click(prism, mesh);
+        }
+      }
+    }, {
+      key: "_mouseMove",
+      value: function _mouseMove(e) {
+        var map = this.getMap();
+        var mesh = map.getObject3DByContainerPos(e.pixel, [this.getObject3DLayer()], false);
+
+        if (mesh != null && mesh.object.__class) {
+          var prism = mesh.object.__class;
+
+          if (this.__activePrism != prism) {
+            if (this.__activePrism) {
+              typeof this._mouseout === 'function' && this._mouseout(this.__activePrism);
+              this.__activePrism = null;
+            }
+
+            this.__activePrism = prism;
+            typeof this._mouseover === 'function' && this._mouseover(prism);
+          }
+        } else {
+          if (this.__activePrism) {
+            typeof this._mouseout === 'function' && this._mouseout(this.__activePrism);
+            this.__activePrism = null;
+          }
+        }
       }
     }, {
       key: "getTopColor",
@@ -2755,6 +2813,10 @@
     }, {
       key: "destroy",
       value: function destroy() {
+        this.__map.off('mousemove', this._mouseMove, this);
+
+        this.__map.off('click', this._clickHandle, this);
+
         for (var id in this._animateCache) {
           var mesh = this._animateCache[key];
           if (mesh.index) cancelAnimationFrame(mesh.index);

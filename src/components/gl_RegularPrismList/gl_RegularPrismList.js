@@ -19,6 +19,9 @@ import {
  * bottomColor : 同上
  * color : 颜色(优先使用上面的颜色)
  * transparent Bool 透明
+ * click function 点击
+ * mouseover function 移入
+ * mouseout function 移出
  */
 export default class gl_RegularPrismList extends gl_Overlays {
   constructor(opt) {
@@ -38,8 +41,52 @@ export default class gl_RegularPrismList extends gl_Overlays {
     this._topColor = opt.topColor
     this._bottomColor = opt.bottomColor
     this._topFaceColor = opt.topFaceColor
+    this._click = opt.click
+    this._mouseover = opt.mouseover
+    this._mouseout = opt.mouseout
+    this.__activePrism = null
     this._animateCache = {}
+    this._initEvent()
   }
+  // 初始化鼠标事件
+  _initEvent() {
+    if (typeof this._click === 'function') {
+      this.getMap().on('click', this._clickHandle, this)
+    }
+    if (typeof this._mouseover === 'function' || typeof this._mouseout === 'function') {
+      this.getMap().on('mousemove', this._mouseMove, this)
+    }
+  }
+  _clickHandle(e) {
+    let map = this.getMap()
+    let mesh = map.getObject3DByContainerPos(e.pixel, [this.getObject3DLayer()], false)
+    if (mesh != null && mesh.object.__class) {
+      let prism = mesh.object.__class
+      typeof this._click === 'function' && this._click(prism, mesh)
+    }
+  }
+
+  _mouseMove(e) {
+    let map = this.getMap()
+    let mesh = map.getObject3DByContainerPos(e.pixel, [this.getObject3DLayer()], false)
+    if (mesh != null && mesh.object.__class) {
+      let prism = mesh.object.__class
+      if (this.__activePrism != prism) {
+        if (this.__activePrism) {
+          typeof this._mouseout === 'function' && this._mouseout(this.__activePrism)
+          this.__activePrism = null
+        }
+        this.__activePrism = prism
+        typeof this._mouseover === 'function' && this._mouseover(prism)
+      }
+    } else {
+      if (this.__activePrism) {
+        typeof this._mouseout === 'function' && this._mouseout(this.__activePrism)
+        this.__activePrism = null
+      }
+    }
+  }
+
   getTopColor() {
     return this._topColor || this._color
   }
@@ -153,7 +200,7 @@ export default class gl_RegularPrismList extends gl_Overlays {
       let list = opt
       list.forEach(item => {
         for (let i = 0; i < meshs.length; i++) {
-          const mesh = meshs[i];
+          const mesh = meshs[i]
           let data = mesh.getExtData()
           if (equalsFunc(item, data)) {
             mesh.setRadius(item.radius)
@@ -161,7 +208,7 @@ export default class gl_RegularPrismList extends gl_Overlays {
             break
           }
         }
-      });
+      })
     } else {
       this._meshs.forEach(mesh => {
         mesh.setRadius(opt.radius)
@@ -207,6 +254,8 @@ export default class gl_RegularPrismList extends gl_Overlays {
   }
 
   destroy() {
+    this.__map.off('mousemove', this._mouseMove, this)
+    this.__map.off('click', this._clickHandle, this)
     for (const id in this._animateCache) {
       const mesh = this._animateCache[key]
       if (mesh.index) cancelAnimationFrame(mesh.index)

@@ -100,6 +100,8 @@ export default class gl_RegularPrism extends gl_Overlays {
 
     cylinder.transparent = this._transparent
 
+    cylinder.__class = this
+
     this.setOverlays(cylinder)
   }
 
