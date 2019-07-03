@@ -296,7 +296,7 @@
     }, {
       key: "getOverlays",
       value: function getOverlays() {
-        return this.__overlays;
+        return this.__overlays || null;
       } // 设置所有覆盖物 内部调用.
 
     }, {
@@ -495,6 +495,37 @@
     var uuid = s.join("");
     return uuid;
   }
+  /**
+   * 返回修正后的Bounds范围:
+   * 地图区域有遮挡或者其他内容时,传入目标返回以及偏移值,返回修正后的范围
+   * 主要和map.setBounds方法配合使用.
+   * @param {AMap.Bounds} sourceBound 
+   * @param {Number} left 地图显示有效区域距离实际地图容器左侧比例
+   * @param {Number} top 地图显示有效区域距离实际地图容器上方比例
+   * @param {Number} width 地图显示有效宽度与实际地图容器宽度比值
+   * @param {Number} height 地图显示有效高度与实际地图容器高度比值
+   */
+
+  function getFixMapBound(sourceBound, left, top, width, height) {
+    var minPoint = sourceBound.getSouthWest();
+    var maxPoint = sourceBound.getNorthEast(); // 计算出原区域的经纬度差值
+
+    var subX = maxPoint.getLng() - minPoint.getLng();
+    var subY = maxPoint.getLat() - minPoint.getLat();
+    var addX = subX / width - subX; // 总共需要增加的经度值
+
+    var addY = subY / height - subY; // 总共需要增加的维度值
+
+    var topY = subY * top / height; // 头部维度差值
+
+    var leftX = subX * left / width; // 左边经度差值
+
+    var rightX = addX - leftX;
+    var bottomY = addY - topY;
+    var minXY = [minPoint.getLng() - leftX, minPoint.getLat() - bottomY];
+    var maxXY = [maxPoint.getLng() + rightX, maxPoint.getLat() + topY];
+    return new AMap.Bounds(minXY, maxXY);
+  }
 
   var Utils = /*#__PURE__*/Object.freeze({
     getDefaultByundefined: getDefaultByundefined,
@@ -504,7 +535,8 @@
     getIntersection: getIntersection,
     getMergeObject: getMergeObject,
     getAngle: getAngle,
-    uuid: uuid
+    uuid: uuid,
+    getFixMapBound: getFixMapBound
   });
 
   function styleInject(css, ref) {
@@ -1167,7 +1199,7 @@
     return PolyrectList;
   }(Overlays);
 
-  var css$1 = ".dcmap-text3d-container {\n  width: 0;\n  display: flex;\n  flex-flow: column nowrap;\n  justify-content: space-between;\n  align-items: center;\n  -webkit-transform-style: preserve-3d;\n          transform-style: preserve-3d; }\n  .dcmap-text3d-container .map-point-text-dom {\n    width: 500px;\n    display: flex;\n    justify-content: center;\n    font-size: 16px;\n    pointer-events: none; }\n  .dcmap-text3d-container .map-point-img-dom {\n    width: 25px;\n    height: 35px;\n    margin: 3px 0;\n    background-image: url(\"http://qn.fengyitong.name/point.png\"); }\n  .dcmap-text3d-container .map-point-small-circle {\n    position: absolute;\n    width: 54px;\n    height: 54px;\n    bottom: -20px;\n    left: 50%;\n    margin-left: -27px;\n    background-color: #0080fe;\n    opacity: 0.5;\n    border-radius: 50%;\n    -webkit-animation: delayLiving 1.5s linear infinite;\n            animation: delayLiving 1.5s linear infinite;\n    display: none; }\n  .dcmap-text3d-container .map-point-large-circle {\n    position: absolute;\n    width: 116px;\n    height: 116px;\n    bottom: -50px;\n    left: 50%;\n    margin-left: -58px;\n    background-color: #0080fe;\n    border-radius: 50%;\n    opacity: 0;\n    -webkit-animation: bigliving 1.5s linear infinite;\n            animation: bigliving 1.5s linear infinite;\n    display: none; }\n\n@-webkit-keyframes delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@-webkit-keyframes bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n";
+  var css$1 = ".dcmap-text3d-container {\n  width: 0;\n  display: flex;\n  flex-flow: column nowrap;\n  justify-content: space-between;\n  align-items: center;\n  -webkit-transform-style: preserve-3d;\n          transform-style: preserve-3d; }\n  .dcmap-text3d-container .map-point-text-dom {\n    width: 500px;\n    display: flex;\n    justify-content: center;\n    font-size: 16px;\n    pointer-events: none; }\n  .dcmap-text3d-container .map-point-img-dom {\n    width: 25px;\n    height: 35px;\n    margin: 3px 0;\n    background-image: url(\"http://qn.fengyitong.name/point.png\"); }\n  .dcmap-text3d-container .map-point-small-circle {\n    position: absolute;\n    width: 54px;\n    height: 54px;\n    bottom: -20px;\n    left: 50%;\n    margin-left: -27px;\n    background-color: #0080fe;\n    opacity: 0.5;\n    border-radius: 50%;\n    -webkit-animation: amap-utils-delayLiving 1.5s linear infinite;\n            animation: amap-utils-delayLiving 1.5s linear infinite;\n    display: none; }\n  .dcmap-text3d-container .map-point-large-circle {\n    position: absolute;\n    width: 116px;\n    height: 116px;\n    bottom: -50px;\n    left: 50%;\n    margin-left: -58px;\n    background-color: #0080fe;\n    border-radius: 50%;\n    opacity: 0;\n    -webkit-animation: amap-utils-bigliving 1.5s linear infinite;\n            animation: amap-utils-bigliving 1.5s linear infinite;\n    display: none; }\n\n@-webkit-keyframes amap-utils-delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes amap-utils-delayLiving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.1; }\n  30% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.5; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@-webkit-keyframes amap-utils-bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n\n@keyframes amap-utils-bigliving {\n  0% {\n    -webkit-transform: rotateX(60deg) scale3d(0, 0, 1);\n            transform: rotateX(60deg) scale3d(0, 0, 1);\n    opacity: 0.3; }\n  /* 50% {\r\n      transform: scale(2);\r\n      opacity: 0;\r\n    } */\n  70% {\n    -webkit-transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n            transform: rotateX(60deg) scale3d(0.8, 0.8, 1);\n    opacity: 0.1; }\n  100% {\n    -webkit-transform: rotateX(60deg) scale3d(1, 1, 1);\n            transform: rotateX(60deg) scale3d(1, 1, 1);\n    opacity: 0; } }\n";
   styleInject(css$1);
 
   /**
@@ -1834,6 +1866,10 @@
       return c;
     }
   }
+
+  var Math$1 = /*#__PURE__*/Object.freeze({
+    getMedian: getMedian
+  });
 
   var gl_Overlays =
   /*#__PURE__*/
@@ -2843,6 +2879,7 @@
     TextQueue: TextQueue,
     ShadowText: ShadowText,
     Utils: Utils,
+    Math: Math$1,
     gl_Polyrect: gl_Polyrect,
     gl_PolyrectList: gl_PolyrectList,
     gl_RegularPrism: gl_RegularPrism,

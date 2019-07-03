@@ -88,7 +88,7 @@ export default class Overlays {
 
   // 获取所有覆盖物方法,内部调用,需要子类自行实现
   getOverlays() {
-    return this.__overlays
+    return this.__overlays || null
   }
 
   // 设置所有覆盖物 内部调用.

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Document</title>
+    <style>
+      #map1 {
+        width: 500px;
+        height: 500px;
+        background-color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map1"></div>
+    <div id="map2"></div>
+    <button id="test">test</button>
+    <script
+      type="text/javascript"
+      src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"
+    ></script>
+    <script src="../gdmap-utils.js"></script>
+  </body>
+  <script>
+    var position = [120.593342986658, 29.111016235593]
+    // 创建高德地图
+    var map = new AMap.Map('map1', {
+      zoom: 7,
+      center: position,
+      rotateEnable: false,
+      pitchEnable: false
+    })
+
+    map.on('moveend', e => {
+      getpixel()
+    })
+
+    document.getElementById('test').addEventListener('click', function() {
+      var bounds = map.getBounds()
+      var fixBounds = AMapUtils.Utils.getFixMapBound(
+        bounds,
+        -0.5,
+        -0.5,
+        2,
+        2
+      )
+      map.setBounds(fixBounds)
+    })
+
+    getpixel()
+
+    function getpixel() {
+      var bounds = map.getBounds()
+      var minXY = bounds.getSouthWest()
+      var maxXY = bounds.getNorthEast()
+      var scale = getMapScale(map)
+      var text = `
+    最小经纬度:${minXY.getLng()},${minXY.getLat()}
+    最大经纬度:${maxXY.getLng()},${maxXY.getLat()}
+    经度相减:${maxXY.getLng() - minXY.getLng()}
+    维度相减:${maxXY.getLat() - minXY.getLat()}
+    比例:${scale}
+    `
+      document.getElementById('map2').innerText = text
+    }
+
+    function getMapScale(map) {
+      let size = map.getSize()
+      let width = size.getWidth() // 容器宽度
+      let height = size.getHeight() // 容器高度
+      let scale = width / height // 容器的宽高比
+
+      let bound = map.getBounds() // 地图范围
+      let minPoint = bound.getSouthWest() // 最小经纬度
+      let maxPoint = bound.getNorthEast() // 最大经纬度
+      let subX = maxPoint.getLng() - minPoint.getLng() // 经度差值
+      let subY = (maxPoint.getLat() - minPoint.getLat()) * scale // 维度差值
+
+      let xyScale = subX / subY // 经纬度宽高比
+
+      return xyScale
+    }
+  </script>
+</html>

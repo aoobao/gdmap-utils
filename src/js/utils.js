@@ -136,3 +136,36 @@ export function uuid() {
   var uuid = s.join("");
   return uuid;
 }
+
+/**
+ * 返回修正后的Bounds范围:
+ * 地图区域有遮挡或者其他内容时,传入目标返回以及偏移值,返回修正后的范围
+ * 主要和map.setBounds方法配合使用.
+ * @param {AMap.Bounds} sourceBound 
+ * @param {Number} left 地图显示有效区域距离实际地图容器左侧比例
+ * @param {Number} top 地图显示有效区域距离实际地图容器上方比例
+ * @param {Number} width 地图显示有效宽度与实际地图容器宽度比值
+ * @param {Number} height 地图显示有效高度与实际地图容器高度比值
+ */
+export function getFixMapBound(sourceBound, left, top, width, height) {
+  let minPoint = sourceBound.getSouthWest()
+  let maxPoint = sourceBound.getNorthEast()
+
+  // 计算出原区域的经纬度差值
+  let subX = maxPoint.getLng() - minPoint.getLng()
+  let subY = maxPoint.getLat() - minPoint.getLat()
+
+
+  let addX = subX / width - subX // 总共需要增加的经度值
+  let addY = subY / height - subY // 总共需要增加的维度值
+
+  let topY = subY * top / height // 头部维度差值
+  let leftX = subX * left / width // 左边经度差值
+  let rightX = addX - leftX
+  let bottomY = addY - topY
+
+  let minXY = [minPoint.getLng() - leftX, minPoint.getLat() - bottomY]
+  let maxXY = [maxPoint.getLng() + rightX, maxPoint.getLat() + topY]
+
+  return new AMap.Bounds(minXY, maxXY)
+}

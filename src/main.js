@@ -25,6 +25,7 @@ export default {
   TextQueue,
   ShadowText,
   Utils,
+  Math,
   gl_Polyrect,
   gl_PolyrectList,
   gl_RegularPrism,

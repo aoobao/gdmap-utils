@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad">
+  </script>
+  <style>
+    #map {
+      width: 500px;
+      height: 500px;
+      background: red;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <script>
+    var map = new AMap.Map('map', {
+      zoom: 7,
+      center: [120.593342986658, 29.111016235593],
+      viewMode: '3D',
+      pitch: 60
+    })
+
+    map.on('click', function (e) {
+      let lnglat = e.lnglat
+      let position2 = [lnglat.getLng(), lnglat.getLat()]
+      console.log(position2)
+    })
+
+    var object3Dlayer = new AMap.Object3DLayer();
+
+
+    function computeBezier(points, numberOfPoints) {
+      var dt;
+      var i;
+      var curve = [];
+
+      dt = 1.0 / (numberOfPoints - 1);
+
+      for (i = 0; i < numberOfPoints; i++) {
+        curve[i] = pointOnCubicBezier(points, i * dt);
+      }
+
+      return curve;
+    }
+
+    function getEllipseHeight(count, maxHeight, minHeight) {
+      var height = [];
+      var radionUnit = Math.PI / 180;
+
+      for (var i = 0; i < count; i++) {
+        var radion = i * radionUnit;
+
+        height.push(minHeight + Math.sin(radion) * maxHeight);
+      }
+
+      return height;
+    }
+  </script>
+</body>
+
+</html>
