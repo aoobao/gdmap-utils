@@ -23,12 +23,14 @@ export function transposePolyrect(coordinate, sep = '|') {
       if (t) {
         let re = [];
         let mat = t.match(pattern);
-        for (var i = 1; i < mat.length; i += 2) {
-          var x = parseFloat(mat[i - 1]);
-          var y = parseFloat(mat[i]);
-          re.push([x, y]);
+        if (mat) {
+          for (var i = 1; i < mat.length; i += 2) {
+            var x = parseFloat(mat[i - 1]);
+            var y = parseFloat(mat[i]);
+            re.push([x, y]);
+          }
+          arr.push(re)
         }
-        arr.push(re)
       }
     })
   } else {
