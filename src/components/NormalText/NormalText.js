@@ -16,6 +16,7 @@ import {
 export default class NormalText extends Overlays {
   constructor(opt) {
     super(opt)
+    // this._clickHandle = this._clickHandle.bind(this)
     this._initialize(opt || {})
   }
   _initialize(opt) {
@@ -26,6 +27,7 @@ export default class NormalText extends Overlays {
     this._paddingHeight = opt.paddingHeight || 10
     this._offsetTop = opt.offsetTop || 0
     this._offsetLeft = opt.offsetLeft || 0
+    // this._click = opt.click
     this._createMarker()
     // opt.map && this.setMap(opt.map)
   }
@@ -58,12 +60,21 @@ export default class NormalText extends Overlays {
     text.style.fontSize = this._textSize + 'px'
     text.style.color = this._textColor
     text.innerText = this._text
+
+    // text.addEventListener('click', this._clickHandle)
     body.appendChild(text)
     return {
       body,
       text
     }
   }
+
+  // _clickHandle() {
+  //   if (typeof this._click === 'function') {
+  //     let data = this.getExtData()
+  //     this._click(data)
+  //   }
+  // }
 
   getTextColor() {
     return this._textColor

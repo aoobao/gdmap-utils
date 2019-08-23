@@ -94,7 +94,11 @@ export default class Polyrect extends Overlays {
       position: this.getPosition(),
       zIndex: this.getzIndex(),
       ...this._textOption,
-      ...zoom
+      ...zoom,
+      extData: () => {
+        let extData = this.getExtData()
+        return extData || null
+      }
     }
     this._textObj = new TextClass(opt)
   }

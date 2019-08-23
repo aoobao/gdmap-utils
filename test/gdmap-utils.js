@@ -269,7 +269,14 @@
     }, {
       key: "getExtData",
       value: function getExtData() {
-        return this.__extData;
+        var extData = this.__extData;
+
+        if (typeof extData === 'function') {
+          var data = extData();
+          return data;
+        }
+
+        return extData;
       } // 设置自定义对象
 
     }, {
@@ -369,13 +376,15 @@
           var re = [];
           var mat = t.match(pattern);
 
-          for (var i = 1; i < mat.length; i += 2) {
-            var x = parseFloat(mat[i - 1]);
-            var y = parseFloat(mat[i]);
-            re.push([x, y]);
-          }
+          if (mat) {
+            for (var i = 1; i < mat.length; i += 2) {
+              var x = parseFloat(mat[i - 1]);
+              var y = parseFloat(mat[i]);
+              re.push([x, y]);
+            }
 
-          arr.push(re);
+            arr.push(re);
+          }
         }
       });
     } else {
@@ -589,7 +598,7 @@
 
       _classCallCheck(this, NormalText);
 
-      _this = _possibleConstructorReturn(this, _getPrototypeOf(NormalText).call(this, opt));
+      _this = _possibleConstructorReturn(this, _getPrototypeOf(NormalText).call(this, opt)); // this._clickHandle = this._clickHandle.bind(this)
 
       _this._initialize(opt || {});
 
@@ -605,7 +614,7 @@
         this._textSize = opt.textSize || 20;
         this._paddingHeight = opt.paddingHeight || 10;
         this._offsetTop = opt.offsetTop || 0;
-        this._offsetLeft = opt.offsetLeft || 0;
+        this._offsetLeft = opt.offsetLeft || 0; // this._click = opt.click
 
         this._createMarker(); // opt.map && this.setMap(opt.map)
 
@@ -640,13 +649,20 @@
         text.style.width = width + 'px';
         text.style.fontSize = this._textSize + 'px';
         text.style.color = this._textColor;
-        text.innerText = this._text;
+        text.innerText = this._text; // text.addEventListener('click', this._clickHandle)
+
         body.appendChild(text);
         return {
           body: body,
           text: text
         };
-      }
+      } // _clickHandle() {
+      //   if (typeof this._click === 'function') {
+      //     let data = this.getExtData()
+      //     this._click(data)
+      //   }
+      // }
+
     }, {
       key: "getTextColor",
       value: function getTextColor() {
@@ -760,6 +776,8 @@
     }, {
       key: "_createText",
       value: function _createText(TextClass) {
+        var _this2 = this;
+
         if (this._textObj) {
           typeof this._textObj.destroy === 'function' && this._textObj.destroy();
           this._textObj = null;
@@ -778,7 +796,13 @@
           map: this.getMap(),
           position: this.getPosition(),
           zIndex: this.getzIndex()
-        }, this._textOption, zoom);
+        }, this._textOption, zoom, {
+          extData: function extData() {
+            var extData = _this2.getExtData();
+
+            return extData || null;
+          }
+        });
 
         this._textObj = new TextClass(opt);
       } // 创建简易网格
@@ -786,7 +810,7 @@
     }, {
       key: "_createCheckPolygon",
       value: function _createCheckPolygon() {
-        var _this2 = this;
+        var _this3 = this;
 
         if (!this.hasCheckPolygon()) return;
 
@@ -800,11 +824,11 @@
             strokeOpacity: 0,
             strokeWeight: 0,
             fillOpacity: 0,
-            zIndex: _this2.__zIndex + 1,
+            zIndex: _this3.__zIndex + 1,
             bubble: true
           });
 
-          _this2._addEvent(polygon);
+          _this3._addEvent(polygon);
 
           return polygon;
         });
@@ -813,22 +837,22 @@
     }, {
       key: "_createPolygon",
       value: function _createPolygon() {
-        var _this3 = this;
+        var _this4 = this;
 
         // 如果有简易区域则不需要绑定事件,否则需要绑定事件
         var hasBindEvent = this.hasCheckPolygon();
         this._polygons = this._coordinate.map(function (coordinate) {
           var polygon = new AMap.Polygon({
             path: coordinate,
-            strokeColor: _this3._strokeColor,
-            strokeOpacity: _this3._strokeOpacity,
-            strokeWeight: _this3._strokeWeight,
-            fillColor: _this3._fillColor,
-            fillOpacity: _this3._fillOpacity,
-            zIndex: _this3.__zIndex,
+            strokeColor: _this4._strokeColor,
+            strokeOpacity: _this4._strokeOpacity,
+            strokeWeight: _this4._strokeWeight,
+            fillColor: _this4._fillColor,
+            fillOpacity: _this4._fillOpacity,
+            zIndex: _this4.__zIndex,
             bubble: true
           });
-          if (!hasBindEvent) _this3._addEvent(polygon);
+          if (!hasBindEvent) _this4._addEvent(polygon);
           return polygon;
         });
       }
@@ -866,7 +890,7 @@
     }, {
       key: "_drawCanvas",
       value: function _drawCanvas(ctx) {
-        var _this4 = this;
+        var _this5 = this;
 
         ctx.save();
         ctx.strokeStyle = this._strokeColor;
@@ -875,16 +899,16 @@
 
         this._coordinate.forEach(function (arr) {
           var pixels = arr.map(function (t) {
-            return _this4.getMap().lngLatToContainer(t);
+            return _this5.getMap().lngLatToContainer(t);
           });
           ctx.beginPath();
-          ctx.globalAlpha = _this4._strokeOpacity;
+          ctx.globalAlpha = _this5._strokeOpacity;
           pixels.forEach(function (pixel) {
             ctx.lineTo(pixel.getX(), pixel.getY());
           });
           ctx.closePath();
           ctx.stroke();
-          ctx.globalAlpha = _this4._fillOpacity;
+          ctx.globalAlpha = _this5._fillOpacity;
           ctx.fill();
         });
 

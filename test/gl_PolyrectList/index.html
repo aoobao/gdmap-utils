@@ -25,7 +25,8 @@
   <button onclick="showText()">显示文字</button>
   <button onclick="setRndStyle()">设置不同样式</button> -->
 </body>
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad">
+</script>
 <script src="/temp/POINT_LIST.js"></script>
 <script src="/gdmap-utils.js"></script>
 <script>
@@ -37,6 +38,11 @@
     pitch: 60,
     mapStyle: 'amap://styles/716773a6cef1ca8a4da771984f22f0dc'
 
+  });
+
+  map.plugin(["AMap.ControlBar"], function () {
+    var controlBar = new AMap.ControlBar()
+    map.addControl(controlBar)
   });
 
   map.AmbientLight = new AMap.Lights.AmbientLight([1, 1, 1], 0.3);
@@ -73,7 +79,8 @@
     return {
       coordinate: t.checkCoordinate,
       color: randColor(),
-      height: randBetween(5, 20) * 10000,
+      // height: randBetween(5, 20) * 10000,
+      height: 30 * 10000,
       transparent: true,
       textOption: {
         text: t.name

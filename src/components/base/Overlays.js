@@ -69,7 +69,12 @@ export default class Overlays {
 
   // 获取自定义对象
   getExtData() {
-    return this.__extData
+    let extData = this.__extData
+    if (typeof extData === 'function') {
+      let data = extData()
+      return data
+    }
+    return extData
   }
   // 设置自定义对象
   setExtData(data) {

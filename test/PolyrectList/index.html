@@ -25,7 +25,8 @@
   <button onclick="showText()">显示文字</button>
   <button onclick="setRndStyle()">设置不同样式</button>
 </body>
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.12&key=6e681b008b867a6588f64e017b0385ad">
+</script>
 <script src="/temp/POINT_LIST.js"></script>
 <script src="/gdmap-utils.js"></script>
 <script>
@@ -48,25 +49,29 @@
     // textClass: null,
     textOption: {
       textColor: 'red',
-      fontSize: 12
+      fontSize: 12,
+      click(data) {
+        alert('click'),
+          console.log(data)
+      }
     },
-    click: function (polyrect) {
-      alert('click:' + JSON.stringify(polyrect.getExtData()))
-    },
-    mouseout: function (polyrect) {
-      // console.log('移出', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'yellow',
-        fillOpacity: 0.3,
-      })
-    },
-    mouseover: function (polyrect, e) {
-      // console.log('移入', polyrect)
-      polyrect.setPolygonStyle({
-        fillColor: 'blue',
-        fillOpacity: 0.5
-      })
-    }
+    // click: function (polyrect) {
+    //   alert('click:' + JSON.stringify(polyrect.getExtData()))
+    // },
+    // mouseout: function (polyrect) {
+    //   // console.log('移出', polyrect)
+    //   polyrect.setPolygonStyle({
+    //     fillColor: 'yellow',
+    //     fillOpacity: 0.3,
+    //   })
+    // },
+    // mouseover: function (polyrect, e) {
+    //   // console.log('移入', polyrect)
+    //   polyrect.setPolygonStyle({
+    //     fillColor: 'blue',
+    //     fillOpacity: 0.5
+    //   })
+    // }
   })
   let list = POINT_LIST.map(t => {
     return {

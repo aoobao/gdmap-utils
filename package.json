@@ -1,6 +1,6 @@
 {
   "name": "amap-utils",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "description": "高德地图二次封装",
   "main": "lib/index.js",
   "scripts": {
